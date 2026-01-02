@@ -7,6 +7,7 @@ junit = "5.10.2"
 maven-plugin-annotations = "3.11.0"
 maven-plugin-api = "3.9.6"
 micrometer = "1.12.4"
+mockito = "5.11.0"
 slf4j = "2.0.12"
 spring-boot = "3.2.4"
 
@@ -21,6 +22,7 @@ junit-jupiter-api = { module = "org.junit.jupiter:junit-jupiter-api", version.re
 maven-plugin-annotations = { module = "org.apache.maven.plugin-tools:maven-plugin-annotations", version.ref = "maven-plugin-annotations" }
 maven-plugin-api = { module = "org.apache.maven:maven-plugin-api", version.ref = "maven-plugin-api" }
 micrometer-core = { module = "io.micrometer:micrometer-core", version.ref = "micrometer" }
+mockito-core = { module = "org.mockito:mockito-core", version.ref = "mockito" }
 slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
 spring-boot-autoconfigure = { module = "org.springframework.boot:spring-boot-autoconfigure", version.ref = "spring-boot" }
 
