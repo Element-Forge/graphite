@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+
+# Validate branch name format: <issue-number>-<description>
+# Example: 42-add-user-auth
+
+BRANCH=$(git rev-parse --abbrev-ref HEAD)
+
+# Skip validation for main/master/develop
+if [[ "$BRANCH" =~ ^(main|master|develop)$ ]]; then
+    exit 0
+fi
+
+# Pattern: starts with number, followed by hyphen, then lowercase alphanumeric with hyphens
+PATTERN="^[0-9]+-[a-z0-9]+(-[a-z0-9]+)*$"
+
+if ! [[ "$BRANCH" =~ $PATTERN ]]; then
+    echo ""
+    echo "=========================================="
+    echo " 🤖 CLAUDE CODE REMINDER"
+    echo "=========================================="
+    echo ""
+    echo " Branch name does not match required format."
+    echo ""
+    echo " Your branch:    $BRANCH"
+    echo " Required format: <issue-number>-<description>"
+    echo " Example:         42-add-user-auth"
+    echo ""
+    echo " Rules:"
+    echo "   - Must start with issue number"
+    echo "   - Lowercase only"
+    echo "   - Hyphens for spaces (no underscores)"
+    echo "   - No prefixes (feature/, fix/, etc.)"
+    echo ""
+    echo "=========================================="
+    echo ""
+    exit 1
+fi
+
+exit 0

@@ -1,0 +1,181 @@
+# .github/workflows/validate-conventions.yml
+# 
+# Validates branch names, commit messages, and PR titles
+# Add this to your .github/workflows/ directory
+
+name: Validate Conventions
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate Branch Name
+        run: |
+          BRANCH="${{ github.head_ref }}"
+          echo "Checking branch: $BRANCH"
+          
+          # Pattern: <issue-number>-<description>
+          if ! [[ "$BRANCH" =~ ^[0-9]+-[a-z0-9]+(-[a-z0-9]+)*$ ]]; then
+            echo ""
+            echo "=========================================="
+            echo " 🤖 CLAUDE CODE REMINDER"
+            echo "=========================================="
+            echo ""
+            echo " Branch name does not match required format."
+            echo ""
+            echo " Your branch:     $BRANCH"
+            echo " Required format: <issue-number>-<description>"
+            echo " Example:         42-add-user-auth"
+            echo ""
+            echo " Rules:"
+            echo "   - Must start with issue number"
+            echo "   - Lowercase only"
+            echo "   - Hyphens for spaces (no underscores)"
+            echo "   - No prefixes (feature/, fix/, etc.)"
+            echo ""
+            echo "=========================================="
+            exit 1
+          fi
+          
+          echo "✅ Branch name is valid"
+
+      - name: Validate Commit Messages
+        run: |
+          echo "Checking commits..."
+          
+          COMMITS=$(git log --format="%s" origin/${{ github.base_ref }}..${{ github.head_ref }})
+          
+          FAILED=0
+          while IFS= read -r MSG; do
+            [ -z "$MSG" ] && continue
+            
+            # Check for colon after issue number
+            if [[ "$MSG" =~ ^#[0-9]+: ]]; then
+              echo "❌ Colon after issue number: $MSG"
+              FAILED=1
+              continue
+            fi
+            
+            # Check for uppercase (allowing proper nouns is hard to validate, so we just check first letter)
+            if [[ "$MSG" =~ ^#[0-9]+\ [A-Z] ]]; then
+              echo "❌ Should be lowercase: $MSG"
+              FAILED=1
+              continue
+            fi
+            
+            # Check for trailing period
+            if [[ "$MSG" =~ \.$ ]]; then
+              echo "❌ No trailing period: $MSG"
+              FAILED=1
+              continue
+            fi
+            
+            # Check basic format
+            if ! [[ "$MSG" =~ ^#[0-9]+\  ]]; then
+              echo "❌ Must start with #<issue>: $MSG"
+              FAILED=1
+              continue
+            fi
+            
+            echo "✅ $MSG"
+          done <<< "$COMMITS"
+          
+          if [ $FAILED -eq 1 ]; then
+            echo ""
+            echo "=========================================="
+            echo " 🤖 CLAUDE CODE REMINDER"
+            echo "=========================================="
+            echo ""
+            echo " Required format: #<issue> <lowercase description>"
+            echo " Example:         #42 add user authentication"
+            echo ""
+            echo "=========================================="
+            exit 1
+          fi
+
+      - name: Validate PR Title
+        run: |
+          TITLE="${{ github.event.pull_request.title }}"
+          echo "Checking PR title: $TITLE"
+          
+          # Check for colon after issue number
+          if [[ "$TITLE" =~ ^#[0-9]+: ]]; then
+            echo ""
+            echo "=========================================="
+            echo " 🤖 CLAUDE CODE REMINDER"
+            echo "=========================================="
+            echo ""
+            echo " PR title has colon after issue number."
+            echo ""
+            echo " Your title:      $TITLE"
+            echo " Required format: #<issue> <Title Case>"
+            echo " Example:         #42 Add User Authentication"
+            echo ""
+            echo "=========================================="
+            exit 1
+          fi
+          
+          # Check basic format (must start with #<number>)
+          if ! [[ "$TITLE" =~ ^#[0-9]+\  ]]; then
+            echo ""
+            echo "=========================================="
+            echo " 🤖 CLAUDE CODE REMINDER"
+            echo "=========================================="
+            echo ""
+            echo " PR title must start with issue number."
+            echo ""
+            echo " Your title:      $TITLE"
+            echo " Required format: #<issue> <Title Case>"
+            echo " Example:         #42 Add User Authentication"
+            echo ""
+            echo "=========================================="
+            exit 1
+          fi
+          
+          # Check for Title Case (first letter after issue should be uppercase)
+          if ! [[ "$TITLE" =~ ^#[0-9]+\ [A-Z] ]]; then
+            echo ""
+            echo "=========================================="
+            echo " 🤖 CLAUDE CODE REMINDER"
+            echo "=========================================="
+            echo ""
+            echo " PR title should be in Title Case."
+            echo ""
+            echo " Your title:      $TITLE"
+            echo " Required format: #<issue> <Title Case>"
+            echo " Example:         #42 Add User Authentication"
+            echo ""
+            echo "=========================================="
+            exit 1
+          fi
+          
+          echo "✅ PR title is valid"
+
+      - name: Check PR Body Contains Closes
+        run: |
+          BODY="${{ github.event.pull_request.body }}"
+          
+          if ! echo "$BODY" | grep -qiE "(closes|fixes|resolves) #[0-9]+"; then
+            echo ""
+            echo "=========================================="
+            echo " 🤖 CLAUDE CODE REMINDER"
+            echo "=========================================="
+            echo ""
+            echo " PR description must include 'Closes #<issue>'"
+            echo ""
+            echo " This auto-closes the issue when the PR is merged."
+            echo ""
+            echo "=========================================="
+            exit 1
+          fi
+          
+          echo "✅ PR body contains issue reference"
