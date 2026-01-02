@@ -249,6 +249,7 @@ final class GeneratorUtils {
         ClassName selectorClass = ClassName.get(selectorPackageName, selectorName);
         ClassName returnTypeClass = ClassName.get(typePackageName, returnTypeName);
         ClassName executableQueryClass = ClassName.get("io.github.graphite", "ExecutableQuery");
+        ClassName operationTypeClass = ClassName.get("io.github.graphite", "ExecutableQuery", "OperationType");
         ParameterizedTypeName executableQueryType = ParameterizedTypeName.get(executableQueryClass, returnTypeClass);
 
         ParameterizedTypeName functionType = ParameterizedTypeName.get(
@@ -269,12 +270,13 @@ final class GeneratorUtils {
         method.addStatement("$T sel = selector.apply(new $T())", selectorClass, selectorClass);
 
         String fieldName = field.getName();
+        String opTypeEnum = "mutation".equals(operationType) ? "MUTATION" : "QUERY";
         if (field.getInputValueDefinitions().isEmpty()) {
-            method.addStatement("return new $T<>(client, $S, null, sel.build(), $T.class)",
-                    executableQueryClass, fieldName, returnTypeClass);
+            method.addStatement("return new $T<>(client, $T.$L, $S, null, sel.build(), $T.class)",
+                    executableQueryClass, operationTypeClass, opTypeEnum, fieldName, returnTypeClass);
         } else {
-            method.addStatement("return new $T<>(client, $S, buildArgs(), sel.build(), $T.class)",
-                    executableQueryClass, fieldName, returnTypeClass);
+            method.addStatement("return new $T<>(client, $T.$L, $S, buildArgs(), sel.build(), $T.class)",
+                    executableQueryClass, operationTypeClass, opTypeEnum, fieldName, returnTypeClass);
         }
 
         return method.build();
