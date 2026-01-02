@@ -151,4 +151,76 @@ class GraphitePluginTest {
         assertEquals("generateGraphiteClient", GraphitePlugin.GENERATE_TASK_NAME);
         assertEquals("introspectGraphiteSchema", GraphitePlugin.INTROSPECT_TASK_NAME);
     }
+
+    @Test
+    void generateTaskFailsWithoutSchemaPath() {
+        project.getPluginManager().apply("io.github.graphite");
+
+        GraphiteExtension extension = project.getExtensions().getByType(GraphiteExtension.class);
+        extension.getPackageName().set("com.example");
+        // schemaPath not set
+
+        Task task = project.getTasks().getByName(GraphitePlugin.GENERATE_TASK_NAME);
+
+        IllegalStateException exception = assertThrows(IllegalStateException.class, () ->
+                task.getActions().forEach(action -> action.execute(task)));
+        assertTrue(exception.getMessage().contains("schemaPath"));
+    }
+
+    @Test
+    void generateTaskFailsWithoutPackageName() {
+        project.getPluginManager().apply("io.github.graphite");
+
+        GraphiteExtension extension = project.getExtensions().getByType(GraphiteExtension.class);
+        extension.getSchemaPath().set(tempDir.resolve("schema.graphqls").toFile());
+        // packageName not set
+
+        Task task = project.getTasks().getByName(GraphitePlugin.GENERATE_TASK_NAME);
+
+        IllegalStateException exception = assertThrows(IllegalStateException.class, () ->
+                task.getActions().forEach(action -> action.execute(task)));
+        assertTrue(exception.getMessage().contains("packageName"));
+    }
+
+    @Test
+    void generateTaskSucceedsWithRequiredConfig() {
+        project.getPluginManager().apply("io.github.graphite");
+
+        GraphiteExtension extension = project.getExtensions().getByType(GraphiteExtension.class);
+        extension.getSchemaPath().set(tempDir.resolve("schema.graphqls").toFile());
+        extension.getPackageName().set("com.example");
+
+        Task task = project.getTasks().getByName(GraphitePlugin.GENERATE_TASK_NAME);
+
+        // Should not throw - placeholder just logs
+        assertDoesNotThrow(() ->
+                task.getActions().forEach(action -> action.execute(task)));
+    }
+
+    @Test
+    void introspectTaskFailsWithoutEndpoint() {
+        project.getPluginManager().apply("io.github.graphite");
+
+        // endpoint not set
+
+        Task task = project.getTasks().getByName(GraphitePlugin.INTROSPECT_TASK_NAME);
+
+        IllegalStateException exception = assertThrows(IllegalStateException.class, () ->
+                task.getActions().forEach(action -> action.execute(task)));
+        assertTrue(exception.getMessage().contains("endpoint"));
+    }
+
+    @Test
+    void introspectTaskSucceedsWithEndpoint() {
+        project.getPluginManager().apply("io.github.graphite");
+
+        GraphiteExtension extension = project.getExtensions().getByType(GraphiteExtension.class);
+        extension.introspection(config -> config.getEndpoint().set("https://example.com/graphql"));
+
+        Task task = project.getTasks().getByName(GraphitePlugin.INTROSPECT_TASK_NAME);
+
+        // Should not throw - placeholder just logs
+        assertDoesNotThrow(() ->
+                task.getActions().forEach(action -> action.execute(task)));
+    }
 }
