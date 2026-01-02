@@ -1,0 +1,16 @@
+# Directories
+/.gradle/
+/.idea/
+/build/
+/out/
+/target/
+
+# Files
+*.class
+*.jar
+*.log
+*.iml
+*.ipr
+*.iws
+.DS_Store
+local.properties
