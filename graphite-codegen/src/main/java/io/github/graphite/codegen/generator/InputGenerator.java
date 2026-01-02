@@ -28,8 +28,8 @@ import java.util.Objects;
  *   <li>Constructor with all fields</li>
  *   <li>Getter methods for each field</li>
  *   <li>Nested Builder class for fluent construction</li>
- *   <li>{@link NotNull} or {@link Nullable} annotations</li>
- *   <li>Jackson {@link JsonProperty} annotations</li>
+ *   <li>{@code @NotNull} or {@code @Nullable} annotations</li>
+ *   <li>Jackson {@code @JsonProperty} annotations</li>
  * </ul>
  */
 public final class InputGenerator {

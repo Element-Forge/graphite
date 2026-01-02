@@ -26,8 +26,8 @@ import java.util.Objects;
  *   <li>Final fields for each GraphQL field</li>
  *   <li>Constructor with all fields</li>
  *   <li>Getter methods for each field</li>
- *   <li>{@link NotNull} or {@link Nullable} annotations based on nullability</li>
- *   <li>Jackson {@link JsonProperty} annotations for serialization</li>
+ *   <li>{@code @NotNull} or {@code @Nullable} annotations based on nullability</li>
+ *   <li>Jackson {@code @JsonProperty} annotations for serialization</li>
  *   <li>JavaDoc from GraphQL descriptions</li>
  * </ul>
  *
