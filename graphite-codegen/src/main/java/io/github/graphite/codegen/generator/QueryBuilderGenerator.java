@@ -124,7 +124,7 @@ public final class QueryBuilderGenerator {
         }
 
         // Add constructor
-        classBuilder.addMethod(createConstructor(field));
+        classBuilder.addMethod(GeneratorUtils.createBuilderConstructor(field, clientClassName, typeMapper));
 
         // Add select method
         classBuilder.addMethod(createSelectMethod(field, selectorName, returnTypeName));
@@ -137,22 +137,6 @@ public final class QueryBuilderGenerator {
         return JavaFile.builder(packageName, classBuilder.build())
                 .indent("    ")
                 .build();
-    }
-
-    private MethodSpec createConstructor(FieldDefinition field) {
-        MethodSpec.Builder constructor = MethodSpec.constructorBuilder()
-                .addModifiers(Modifier.PUBLIC)
-                .addParameter(clientClassName, "client");
-
-        constructor.addStatement("this.client = $T.requireNonNull(client, $S)",
-                Objects.class, "client must not be null");
-
-        for (InputValueDefinition arg : field.getInputValueDefinitions()) {
-            constructor.addParameter(typeMapper.mapType(arg.getType()), arg.getName());
-            constructor.addStatement("this.$N = $N", arg.getName(), arg.getName());
-        }
-
-        return constructor.build();
     }
 
     private MethodSpec createSelectMethod(FieldDefinition field, String selectorName, String returnTypeName) {

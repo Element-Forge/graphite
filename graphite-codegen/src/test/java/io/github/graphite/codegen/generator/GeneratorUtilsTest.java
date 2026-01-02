@@ -1,5 +1,6 @@
 package io.github.graphite.codegen.generator;
 
+import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.MethodSpec;
 import graphql.language.Description;
 import graphql.language.FieldDefinition;
@@ -259,5 +260,67 @@ class GeneratorUtilsTest {
         NonNullType type = NonNullType.newNonNullType(
                 graphql.language.TypeName.newTypeName("UpdateUserInput").build()).build();
         assertTrue(GeneratorUtils.isInputType(type));
+    }
+
+    @Test
+    void createBuilderConstructorNoArgs() {
+        TypeMapper mapper = TypeMapper.create("com.example", Map.of());
+        ClassName clientClass = ClassName.get("io.github.graphite", "GraphiteClient");
+        FieldDefinition field = FieldDefinition.newFieldDefinition()
+                .name("users")
+                .type(graphql.language.TypeName.newTypeName("User").build())
+                .build();
+
+        MethodSpec constructor = GeneratorUtils.createBuilderConstructor(field, clientClass, mapper);
+
+        assertEquals("<init>", constructor.name);
+        assertEquals(1, constructor.parameters.size());
+        assertEquals("client", constructor.parameters.get(0).name);
+    }
+
+    @Test
+    void createBuilderConstructorWithArgs() {
+        TypeMapper mapper = TypeMapper.create("com.example", Map.of());
+        ClassName clientClass = ClassName.get("io.github.graphite", "GraphiteClient");
+        FieldDefinition field = FieldDefinition.newFieldDefinition()
+                .name("user")
+                .type(graphql.language.TypeName.newTypeName("User").build())
+                .inputValueDefinition(InputValueDefinition.newInputValueDefinition()
+                        .name("id")
+                        .type(graphql.language.TypeName.newTypeName("ID").build())
+                        .build())
+                .build();
+
+        MethodSpec constructor = GeneratorUtils.createBuilderConstructor(field, clientClass, mapper);
+
+        assertEquals("<init>", constructor.name);
+        assertEquals(2, constructor.parameters.size());
+        assertEquals("client", constructor.parameters.get(0).name);
+        assertEquals("id", constructor.parameters.get(1).name);
+    }
+
+    @Test
+    void createBuilderConstructorWithMultipleArgs() {
+        TypeMapper mapper = TypeMapper.create("com.example", Map.of());
+        ClassName clientClass = ClassName.get("io.github.graphite", "GraphiteClient");
+        FieldDefinition field = FieldDefinition.newFieldDefinition()
+                .name("users")
+                .type(graphql.language.TypeName.newTypeName("User").build())
+                .inputValueDefinition(InputValueDefinition.newInputValueDefinition()
+                        .name("limit")
+                        .type(graphql.language.TypeName.newTypeName("Int").build())
+                        .build())
+                .inputValueDefinition(InputValueDefinition.newInputValueDefinition()
+                        .name("offset")
+                        .type(graphql.language.TypeName.newTypeName("Int").build())
+                        .build())
+                .build();
+
+        MethodSpec constructor = GeneratorUtils.createBuilderConstructor(field, clientClass, mapper);
+
+        assertEquals("<init>", constructor.name);
+        assertEquals(3, constructor.parameters.size());
+        assertEquals("limit", constructor.parameters.get(1).name);
+        assertEquals("offset", constructor.parameters.get(2).name);
     }
 }

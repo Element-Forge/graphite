@@ -200,6 +200,33 @@ final class GeneratorUtils {
     }
 
     /**
+     * Creates a constructor that accepts a client and field arguments.
+     *
+     * @param field the field definition
+     * @param clientClassName the client class name
+     * @param typeMapper the type mapper
+     * @return the generated constructor
+     */
+    @NotNull
+    static MethodSpec createBuilderConstructor(@NotNull FieldDefinition field,
+                                                @NotNull ClassName clientClassName,
+                                                @NotNull TypeMapper typeMapper) {
+        MethodSpec.Builder constructor = MethodSpec.constructorBuilder()
+                .addModifiers(Modifier.PUBLIC)
+                .addParameter(clientClassName, "client");
+
+        constructor.addStatement("this.client = $T.requireNonNull(client, $S)",
+                java.util.Objects.class, "client must not be null");
+
+        for (InputValueDefinition arg : field.getInputValueDefinitions()) {
+            constructor.addParameter(typeMapper.mapType(arg.getType()), arg.getName());
+            constructor.addStatement("this.$N = $N", arg.getName(), arg.getName());
+        }
+
+        return constructor.build();
+    }
+
+    /**
      * Extracts the base type name from a GraphQL type.
      * Unwraps NonNullType and ListType wrappers.
      *
