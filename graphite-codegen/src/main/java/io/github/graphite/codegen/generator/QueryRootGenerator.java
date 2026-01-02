@@ -122,7 +122,7 @@ public final class QueryRootGenerator {
 
     private MethodSpec createQueryMethod(FieldDefinition field) {
         String fieldName = field.getName();
-        String queryClassName = capitalize(fieldName) + "Query";
+        String queryClassName = GeneratorUtils.capitalize(fieldName) + "Query";
         ClassName returnType = ClassName.get(packageName, queryClassName);
 
         MethodSpec.Builder method = MethodSpec.methodBuilder(fieldName)
@@ -171,13 +171,6 @@ public final class QueryRootGenerator {
         }
 
         return method.build();
-    }
-
-    private String capitalize(String str) {
-        if (str == null || str.isEmpty()) {
-            return str;
-        }
-        return Character.toUpperCase(str.charAt(0)) + str.substring(1);
     }
 
     /**

@@ -112,6 +112,19 @@ final class GeneratorUtils {
     }
 
     /**
+     * Capitalizes the first letter of a string.
+     *
+     * @param str the string to capitalize
+     * @return the capitalized string, or the original if null or empty
+     */
+    static String capitalize(String str) {
+        if (str == null || str.isEmpty()) {
+            return str;
+        }
+        return Character.toUpperCase(str.charAt(0)) + str.substring(1);
+    }
+
+    /**
      * Field information for code generation.
      *
      * @param name the field name

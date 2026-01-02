@@ -122,7 +122,7 @@ public final class MutationRootGenerator {
 
     private MethodSpec createMutationMethod(FieldDefinition field) {
         String fieldName = field.getName();
-        String mutationClassName = capitalize(fieldName) + "Mutation";
+        String mutationClassName = GeneratorUtils.capitalize(fieldName) + "Mutation";
         ClassName returnType = ClassName.get(packageName, mutationClassName);
 
         MethodSpec.Builder method = MethodSpec.methodBuilder(fieldName)
@@ -171,13 +171,6 @@ public final class MutationRootGenerator {
         }
 
         return method.build();
-    }
-
-    private String capitalize(String str) {
-        if (str == null || str.isEmpty()) {
-            return str;
-        }
-        return Character.toUpperCase(str.charAt(0)) + str.substring(1);
     }
 
     /**

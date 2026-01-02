@@ -94,4 +94,23 @@ class GeneratorUtilsTest {
         assertEquals("email", field.name());
         assertFalse(field.nonNull());
     }
+
+    @Test
+    void capitalizeNormalString() {
+        assertEquals("User", GeneratorUtils.capitalize("user"));
+        assertEquals("CreateUser", GeneratorUtils.capitalize("createUser"));
+        assertEquals("A", GeneratorUtils.capitalize("a"));
+    }
+
+    @Test
+    void capitalizeAlreadyCapitalized() {
+        assertEquals("User", GeneratorUtils.capitalize("User"));
+        assertEquals("ABC", GeneratorUtils.capitalize("ABC"));
+    }
+
+    @Test
+    void capitalizeEmptyOrNull() {
+        assertNull(GeneratorUtils.capitalize(null));
+        assertEquals("", GeneratorUtils.capitalize(""));
+    }
 }
