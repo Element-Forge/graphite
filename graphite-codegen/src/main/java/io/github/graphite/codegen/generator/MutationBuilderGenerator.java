@@ -9,10 +9,6 @@ import com.squareup.javapoet.ParameterizedTypeName;
 import com.squareup.javapoet.TypeSpec;
 import graphql.language.FieldDefinition;
 import graphql.language.InputValueDefinition;
-import graphql.language.ListType;
-import graphql.language.NonNullType;
-import graphql.language.Type;
-import graphql.language.TypeName;
 import io.github.graphite.codegen.CodeGeneratorConfig;
 import io.github.graphite.codegen.TypeMapper;
 import org.jetbrains.annotations.NotNull;
@@ -98,7 +94,7 @@ public final class MutationBuilderGenerator {
 
         String fieldName = field.getName();
         String className = GeneratorUtils.capitalize(fieldName) + "Mutation";
-        String returnTypeName = getBaseTypeName(field.getType());
+        String returnTypeName = GeneratorUtils.getBaseTypeName(field.getType());
         String selectorName = returnTypeName + "Selector";
 
         TypeSpec.Builder classBuilder = TypeSpec.classBuilder(className)
@@ -213,13 +209,13 @@ public final class MutationBuilderGenerator {
             }
 
             // Handle different types for argument formatting
-            if (isStringType(arg.getType())) {
+            if (GeneratorUtils.isStringType(arg.getType())) {
                 method.beginControlFlow("if ($N != null)", argName);
                 method.addStatement("sb.append(\"\\\"\").append($N).append(\"\\\"\")", argName);
                 method.nextControlFlow("else");
                 method.addStatement("sb.append(\"null\")");
                 method.endControlFlow();
-            } else if (isInputType(arg.getType())) {
+            } else if (GeneratorUtils.isInputType(arg.getType())) {
                 method.beginControlFlow("if ($N != null)", argName);
                 method.addStatement("sb.append($N.toGraphQL())", argName);
                 method.nextControlFlow("else");
@@ -234,29 +230,6 @@ public final class MutationBuilderGenerator {
         method.addStatement("return sb.toString()");
 
         return method.build();
-    }
-
-    private boolean isStringType(Type<?> type) {
-        String baseType = getBaseTypeName(type);
-        return "String".equals(baseType) || "ID".equals(baseType);
-    }
-
-    private boolean isInputType(Type<?> type) {
-        String baseType = getBaseTypeName(type);
-        return baseType.endsWith("Input");
-    }
-
-    private String getBaseTypeName(Type<?> type) {
-        if (type instanceof NonNullType nonNull) {
-            return getBaseTypeName(nonNull.getType());
-        }
-        if (type instanceof ListType list) {
-            return getBaseTypeName(list.getType());
-        }
-        if (type instanceof TypeName typeName) {
-            return typeName.getName();
-        }
-        return "Unknown";
     }
 
     /**

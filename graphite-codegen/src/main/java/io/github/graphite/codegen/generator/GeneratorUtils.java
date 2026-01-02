@@ -3,10 +3,11 @@ package io.github.graphite.codegen.generator;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.ParameterSpec;
-import com.squareup.javapoet.TypeName;
 import graphql.language.FieldDefinition;
 import graphql.language.InputValueDefinition;
+import graphql.language.ListType;
 import graphql.language.NonNullType;
+import graphql.language.Type;
 import io.github.graphite.codegen.TypeMapper;
 import org.jetbrains.annotations.NotNull;
 
@@ -199,11 +200,54 @@ final class GeneratorUtils {
     }
 
     /**
+     * Extracts the base type name from a GraphQL type.
+     * Unwraps NonNullType and ListType wrappers.
+     *
+     * @param type the GraphQL type
+     * @return the base type name
+     */
+    @NotNull
+    static String getBaseTypeName(Type<?> type) {
+        if (type instanceof NonNullType nonNull) {
+            return getBaseTypeName(nonNull.getType());
+        }
+        if (type instanceof ListType list) {
+            return getBaseTypeName(list.getType());
+        }
+        if (type instanceof graphql.language.TypeName gqlTypeName) {
+            return gqlTypeName.getName();
+        }
+        return "Unknown";
+    }
+
+    /**
+     * Checks if the given type is a String or ID type.
+     *
+     * @param type the GraphQL type
+     * @return true if the type is String or ID
+     */
+    static boolean isStringType(Type<?> type) {
+        String baseType = getBaseTypeName(type);
+        return "String".equals(baseType) || "ID".equals(baseType);
+    }
+
+    /**
+     * Checks if the given type is an input type (name ends with "Input").
+     *
+     * @param type the GraphQL type
+     * @return true if the type is an input type
+     */
+    static boolean isInputType(Type<?> type) {
+        String baseType = getBaseTypeName(type);
+        return baseType.endsWith("Input");
+    }
+
+    /**
      * Field information for code generation.
      *
      * @param name the field name
      * @param type the Java type
      * @param nonNull whether the field is non-null
      */
-    record FieldInfo(String name, TypeName type, boolean nonNull) {}
+    record FieldInfo(String name, com.squareup.javapoet.TypeName type, boolean nonNull) {}
 }

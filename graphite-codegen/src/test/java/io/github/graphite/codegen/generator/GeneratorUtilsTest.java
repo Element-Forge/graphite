@@ -1,10 +1,10 @@
 package io.github.graphite.codegen.generator;
 
 import com.squareup.javapoet.MethodSpec;
-import com.squareup.javapoet.TypeName;
 import graphql.language.Description;
 import graphql.language.FieldDefinition;
 import graphql.language.InputValueDefinition;
+import graphql.language.ListType;
 import graphql.language.NonNullType;
 import io.github.graphite.codegen.TypeMapper;
 import org.junit.jupiter.api.Test;
@@ -19,8 +19,8 @@ class GeneratorUtilsTest {
     @Test
     void createEqualsWithFields() {
         List<GeneratorUtils.FieldInfo> fields = List.of(
-                new GeneratorUtils.FieldInfo("id", TypeName.get(String.class), true),
-                new GeneratorUtils.FieldInfo("name", TypeName.get(String.class), false)
+                new GeneratorUtils.FieldInfo("id", com.squareup.javapoet.TypeName.get(String.class), true),
+                new GeneratorUtils.FieldInfo("name", com.squareup.javapoet.TypeName.get(String.class), false)
         );
 
         MethodSpec equals = GeneratorUtils.createEquals("User", fields);
@@ -43,8 +43,8 @@ class GeneratorUtilsTest {
     @Test
     void createHashCodeWithFields() {
         List<GeneratorUtils.FieldInfo> fields = List.of(
-                new GeneratorUtils.FieldInfo("id", TypeName.get(String.class), true),
-                new GeneratorUtils.FieldInfo("name", TypeName.get(String.class), false)
+                new GeneratorUtils.FieldInfo("id", com.squareup.javapoet.TypeName.get(String.class), true),
+                new GeneratorUtils.FieldInfo("name", com.squareup.javapoet.TypeName.get(String.class), false)
         );
 
         MethodSpec hashCode = GeneratorUtils.createHashCode(fields);
@@ -66,8 +66,8 @@ class GeneratorUtilsTest {
     @Test
     void createToStringWithFields() {
         List<GeneratorUtils.FieldInfo> fields = List.of(
-                new GeneratorUtils.FieldInfo("id", TypeName.get(String.class), true),
-                new GeneratorUtils.FieldInfo("name", TypeName.get(String.class), false)
+                new GeneratorUtils.FieldInfo("id", com.squareup.javapoet.TypeName.get(String.class), true),
+                new GeneratorUtils.FieldInfo("name", com.squareup.javapoet.TypeName.get(String.class), false)
         );
 
         MethodSpec toString = GeneratorUtils.createToString("User", fields);
@@ -86,16 +86,16 @@ class GeneratorUtilsTest {
 
     @Test
     void fieldInfoRecord() {
-        GeneratorUtils.FieldInfo field = new GeneratorUtils.FieldInfo("id", TypeName.get(String.class), true);
+        GeneratorUtils.FieldInfo field = new GeneratorUtils.FieldInfo("id", com.squareup.javapoet.TypeName.get(String.class), true);
 
         assertEquals("id", field.name());
-        assertEquals(TypeName.get(String.class), field.type());
+        assertEquals(com.squareup.javapoet.TypeName.get(String.class), field.type());
         assertTrue(field.nonNull());
     }
 
     @Test
     void fieldInfoRecordNullable() {
-        GeneratorUtils.FieldInfo field = new GeneratorUtils.FieldInfo("email", TypeName.get(String.class), false);
+        GeneratorUtils.FieldInfo field = new GeneratorUtils.FieldInfo("email", com.squareup.javapoet.TypeName.get(String.class), false);
 
         assertEquals("email", field.name());
         assertFalse(field.nonNull());
@@ -186,5 +186,78 @@ class GeneratorUtilsTest {
         assertEquals("deleteUser", method.name);
         assertTrue(method.returnType.toString().contains("DeleteUserMutation"));
         assertTrue(method.javadoc.toString().contains("mutation builder"));
+    }
+
+    @Test
+    void getBaseTypeNameSimple() {
+        graphql.language.TypeName type = graphql.language.TypeName.newTypeName("User").build();
+        assertEquals("User", GeneratorUtils.getBaseTypeName(type));
+    }
+
+    @Test
+    void getBaseTypeNameNonNull() {
+        NonNullType type = NonNullType.newNonNullType(
+                graphql.language.TypeName.newTypeName("User").build()).build();
+        assertEquals("User", GeneratorUtils.getBaseTypeName(type));
+    }
+
+    @Test
+    void getBaseTypeNameList() {
+        ListType type = ListType.newListType(
+                graphql.language.TypeName.newTypeName("User").build()).build();
+        assertEquals("User", GeneratorUtils.getBaseTypeName(type));
+    }
+
+    @Test
+    void getBaseTypeNameNestedNonNullList() {
+        NonNullType type = NonNullType.newNonNullType(
+                ListType.newListType(
+                        NonNullType.newNonNullType(
+                                graphql.language.TypeName.newTypeName("User").build()).build()).build()).build();
+        assertEquals("User", GeneratorUtils.getBaseTypeName(type));
+    }
+
+    @Test
+    void isStringTypeString() {
+        graphql.language.TypeName type = graphql.language.TypeName.newTypeName("String").build();
+        assertTrue(GeneratorUtils.isStringType(type));
+    }
+
+    @Test
+    void isStringTypeId() {
+        graphql.language.TypeName type = graphql.language.TypeName.newTypeName("ID").build();
+        assertTrue(GeneratorUtils.isStringType(type));
+    }
+
+    @Test
+    void isStringTypeOther() {
+        graphql.language.TypeName type = graphql.language.TypeName.newTypeName("User").build();
+        assertFalse(GeneratorUtils.isStringType(type));
+    }
+
+    @Test
+    void isStringTypeNonNull() {
+        NonNullType type = NonNullType.newNonNullType(
+                graphql.language.TypeName.newTypeName("ID").build()).build();
+        assertTrue(GeneratorUtils.isStringType(type));
+    }
+
+    @Test
+    void isInputTypeTrue() {
+        graphql.language.TypeName type = graphql.language.TypeName.newTypeName("CreateUserInput").build();
+        assertTrue(GeneratorUtils.isInputType(type));
+    }
+
+    @Test
+    void isInputTypeFalse() {
+        graphql.language.TypeName type = graphql.language.TypeName.newTypeName("User").build();
+        assertFalse(GeneratorUtils.isInputType(type));
+    }
+
+    @Test
+    void isInputTypeNonNull() {
+        NonNullType type = NonNullType.newNonNullType(
+                graphql.language.TypeName.newTypeName("UpdateUserInput").build()).build();
+        assertTrue(GeneratorUtils.isInputType(type));
     }
 }
