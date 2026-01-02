@@ -111,7 +111,7 @@ public final class RetryPolicy {
             return Duration.ZERO;
         }
 
-        double delayMs = initialDelay.toMillis() * Math.pow(multiplier, attempt - 1);
+        double delayMs = initialDelay.toMillis() * Math.pow(multiplier, (double) attempt - 1);
         long cappedDelayMs = Math.min((long) delayMs, maxDelay.toMillis());
         return Duration.ofMillis(cappedDelayMs);
     }
