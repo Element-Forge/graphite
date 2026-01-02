@@ -14,3 +14,6 @@ javapoet = { module = "com.squareup:javapoet", version.ref = "javapoet" }
 jetbrains-annotations = { module = "org.jetbrains:annotations", version.ref = "jetbrains-annotations" }
 slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
 micrometer-core = { module = "io.micrometer:micrometer-core", version.ref = "micrometer" }
+
+[bundles]
+jackson = ["jackson-databind", "jackson-datatype-jsr310"]

@@ -14,3 +14,17 @@ java {
 repositories {
     mavenCentral()
 }
+
+allprojects {
+    repositories {
+        mavenCentral()
+    }
+}
+
+subprojects {
+    apply(plugin = "java-library")
+
+    dependencies {
+        "api"(rootProject.libs.jetbrains.annotations)
+    }
+}
