@@ -36,6 +36,7 @@ subprojects {
     dependencies {
         "api"(rootProject.libs.jetbrains.annotations)
         "testImplementation"(rootProject.libs.junit.jupiter)
+        "testRuntimeOnly"("org.junit.platform:junit-platform-launcher")
     }
 
     tasks.named<Test>("test") {
