@@ -1,7 +1,13 @@
 package io.github.graphite.codegen.generator;
 
+import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.MethodSpec;
+import com.squareup.javapoet.ParameterSpec;
 import com.squareup.javapoet.TypeName;
+import graphql.language.FieldDefinition;
+import graphql.language.InputValueDefinition;
+import graphql.language.NonNullType;
+import io.github.graphite.codegen.TypeMapper;
 import org.jetbrains.annotations.NotNull;
 
 import javax.lang.model.element.Modifier;
@@ -122,6 +128,74 @@ final class GeneratorUtils {
             return str;
         }
         return Character.toUpperCase(str.charAt(0)) + str.substring(1);
+    }
+
+    /**
+     * Creates a root operation method (query or mutation) for a field definition.
+     *
+     * @param field the field definition
+     * @param packageName the package name for generated classes
+     * @param typeMapper the type mapper for converting GraphQL types
+     * @param suffix the class suffix (e.g., "Query" or "Mutation")
+     * @param builderType the builder type description (e.g., "query" or "mutation")
+     * @return the generated method
+     */
+    @NotNull
+    static MethodSpec createRootOperationMethod(@NotNull FieldDefinition field,
+                                                 @NotNull String packageName,
+                                                 @NotNull TypeMapper typeMapper,
+                                                 @NotNull String suffix,
+                                                 @NotNull String builderType) {
+        String fieldName = field.getName();
+        String className = capitalize(fieldName) + suffix;
+        ClassName returnType = ClassName.get(packageName, className);
+
+        MethodSpec.Builder method = MethodSpec.methodBuilder(fieldName)
+                .addModifiers(Modifier.PUBLIC)
+                .returns(returnType);
+
+        // Add JavaDoc
+        if (field.getDescription() != null) {
+            method.addJavadoc("$L\n", field.getDescription().getContent());
+            method.addJavadoc("\n");
+        }
+
+        // Add parameters for arguments
+        StringBuilder argsBuilder = new StringBuilder();
+        for (InputValueDefinition arg : field.getInputValueDefinitions()) {
+            boolean isNonNull = arg.getType() instanceof NonNullType;
+            ParameterSpec.Builder param = ParameterSpec.builder(
+                    typeMapper.mapType(arg.getType()),
+                    arg.getName()
+            );
+            if (isNonNull) {
+                param.addAnnotation(NotNull.class);
+            }
+            method.addParameter(param.build());
+
+            // Add to JavaDoc
+            if (arg.getDescription() != null) {
+                method.addJavadoc("@param $L $L\n", arg.getName(), arg.getDescription().getContent());
+            } else {
+                method.addJavadoc("@param $L the $L argument\n", arg.getName(), arg.getName());
+            }
+
+            if (argsBuilder.length() > 0) {
+                argsBuilder.append(", ");
+            }
+            argsBuilder.append(arg.getName());
+        }
+
+        method.addJavadoc("@return a $L builder for this operation\n", builderType);
+
+        // Create return statement
+        if (field.getInputValueDefinitions().isEmpty()) {
+            method.addStatement("return new $T(client)", returnType);
+        } else {
+            method.addStatement("return new $T(client, $L)", returnType, argsBuilder.toString());
+        }
+
+        return method.build();
     }
 
     /**

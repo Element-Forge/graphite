@@ -8,8 +8,6 @@ import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.ParameterSpec;
 import com.squareup.javapoet.TypeSpec;
 import graphql.language.FieldDefinition;
-import graphql.language.InputValueDefinition;
-import graphql.language.NonNullType;
 import graphql.language.ObjectTypeDefinition;
 import io.github.graphite.codegen.CodeGeneratorConfig;
 import io.github.graphite.codegen.TypeMapper;
@@ -112,65 +110,13 @@ public final class QueryRootGenerator {
 
         // Add query methods for each field
         for (FieldDefinition field : queryTypeDef.getFieldDefinitions()) {
-            classBuilder.addMethod(createQueryMethod(field));
+            classBuilder.addMethod(GeneratorUtils.createRootOperationMethod(
+                    field, packageName, typeMapper, "Query", "query"));
         }
 
         return JavaFile.builder(packageName, classBuilder.build())
                 .indent("    ")
                 .build();
-    }
-
-    private MethodSpec createQueryMethod(FieldDefinition field) {
-        String fieldName = field.getName();
-        String queryClassName = GeneratorUtils.capitalize(fieldName) + "Query";
-        ClassName returnType = ClassName.get(packageName, queryClassName);
-
-        MethodSpec.Builder method = MethodSpec.methodBuilder(fieldName)
-                .addModifiers(Modifier.PUBLIC)
-                .returns(returnType);
-
-        // Add JavaDoc
-        if (field.getDescription() != null) {
-            method.addJavadoc("$L\n", field.getDescription().getContent());
-            method.addJavadoc("\n");
-        }
-
-        // Add parameters for arguments
-        StringBuilder argsBuilder = new StringBuilder();
-        for (InputValueDefinition arg : field.getInputValueDefinitions()) {
-            boolean isNonNull = arg.getType() instanceof NonNullType;
-            ParameterSpec.Builder param = ParameterSpec.builder(
-                    typeMapper.mapType(arg.getType()),
-                    arg.getName()
-            );
-            if (isNonNull) {
-                param.addAnnotation(NotNull.class);
-            }
-            method.addParameter(param.build());
-
-            // Add to JavaDoc
-            if (arg.getDescription() != null) {
-                method.addJavadoc("@param $L $L\n", arg.getName(), arg.getDescription().getContent());
-            } else {
-                method.addJavadoc("@param $L the $L argument\n", arg.getName(), arg.getName());
-            }
-
-            if (argsBuilder.length() > 0) {
-                argsBuilder.append(", ");
-            }
-            argsBuilder.append(arg.getName());
-        }
-
-        method.addJavadoc("@return a query builder for this operation\n");
-
-        // Create return statement
-        if (field.getInputValueDefinitions().isEmpty()) {
-            method.addStatement("return new $T(client)", returnType);
-        } else {
-            method.addStatement("return new $T(client, $L)", returnType, argsBuilder.toString());
-        }
-
-        return method.build();
     }
 
     /**
