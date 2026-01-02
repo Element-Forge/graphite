@@ -19,6 +19,100 @@ import static org.junit.jupiter.api.Assertions.*;
 class GeneratorUtilsTest {
 
     @Test
+    void createConstructorWithFields() {
+        List<GeneratorUtils.FieldInfo> fields = List.of(
+                new GeneratorUtils.FieldInfo("id", com.squareup.javapoet.TypeName.get(String.class), true),
+                new GeneratorUtils.FieldInfo("name", com.squareup.javapoet.TypeName.get(String.class), false)
+        );
+
+        MethodSpec constructor = GeneratorUtils.createConstructor(fields);
+
+        assertEquals("<init>", constructor.name);
+        assertEquals(2, constructor.parameters.size());
+        assertEquals("id", constructor.parameters.get(0).name);
+        assertEquals("name", constructor.parameters.get(1).name);
+    }
+
+    @Test
+    void createConstructorWithNoFields() {
+        List<GeneratorUtils.FieldInfo> fields = List.of();
+
+        MethodSpec constructor = GeneratorUtils.createConstructor(fields);
+
+        assertEquals("<init>", constructor.name);
+        assertTrue(constructor.parameters.isEmpty());
+    }
+
+    @Test
+    void createGetterNonNull() {
+        GeneratorUtils.FieldInfo field = new GeneratorUtils.FieldInfo(
+                "id", com.squareup.javapoet.TypeName.get(String.class), true, "The unique identifier.");
+
+        MethodSpec getter = GeneratorUtils.createGetter(field);
+
+        assertEquals("id", getter.name);
+        String code = getter.toString();
+        assertTrue(code.contains("NotNull"));
+        assertTrue(code.contains("JsonProperty"));
+        assertTrue(code.contains("The unique identifier."));
+        assertTrue(getter.javadoc.toString().contains("@return the id value"));
+    }
+
+    @Test
+    void createGetterNullable() {
+        GeneratorUtils.FieldInfo field = new GeneratorUtils.FieldInfo(
+                "email", com.squareup.javapoet.TypeName.get(String.class), false, null);
+
+        MethodSpec getter = GeneratorUtils.createGetter(field);
+
+        assertEquals("email", getter.name);
+        String code = getter.toString();
+        assertTrue(code.contains("Nullable"));
+        assertTrue(code.contains("JsonProperty"));
+        assertTrue(getter.javadoc.toString().contains("@return the email value"));
+    }
+
+    @Test
+    void createGetterWithDescription() {
+        GeneratorUtils.FieldInfo field = new GeneratorUtils.FieldInfo(
+                "name", com.squareup.javapoet.TypeName.get(String.class), true, "The user's full name.");
+
+        MethodSpec getter = GeneratorUtils.createGetter(field);
+
+        assertTrue(getter.javadoc.toString().contains("The user's full name."));
+        assertTrue(getter.javadoc.toString().contains("@return the name value"));
+    }
+
+    @Test
+    void createGetterWithoutDescription() {
+        GeneratorUtils.FieldInfo field = new GeneratorUtils.FieldInfo(
+                "age", com.squareup.javapoet.TypeName.INT, false);
+
+        MethodSpec getter = GeneratorUtils.createGetter(field);
+
+        assertTrue(getter.javadoc.toString().contains("@return the age value"));
+        assertFalse(getter.javadoc.toString().contains("\n\n"));
+    }
+
+    @Test
+    void fieldInfoWithDescription() {
+        GeneratorUtils.FieldInfo field = new GeneratorUtils.FieldInfo(
+                "email", com.squareup.javapoet.TypeName.get(String.class), false, "The user's email.");
+
+        assertEquals("email", field.name());
+        assertEquals("The user's email.", field.description());
+    }
+
+    @Test
+    void fieldInfoWithoutDescription() {
+        GeneratorUtils.FieldInfo field = new GeneratorUtils.FieldInfo(
+                "id", com.squareup.javapoet.TypeName.get(String.class), true);
+
+        assertEquals("id", field.name());
+        assertNull(field.description());
+    }
+
+    @Test
     void createEqualsWithFields() {
         List<GeneratorUtils.FieldInfo> fields = List.of(
                 new GeneratorUtils.FieldInfo("id", com.squareup.javapoet.TypeName.get(String.class), true),

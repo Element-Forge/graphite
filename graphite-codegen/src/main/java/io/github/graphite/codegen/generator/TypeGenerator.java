@@ -1,11 +1,8 @@
 package io.github.graphite.codegen.generator;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.squareup.javapoet.AnnotationSpec;
 import com.squareup.javapoet.FieldSpec;
 import com.squareup.javapoet.JavaFile;
-import com.squareup.javapoet.MethodSpec;
-import com.squareup.javapoet.TypeName;
 import com.squareup.javapoet.TypeSpec;
 import graphql.language.FieldDefinition;
 import graphql.language.NonNullType;
@@ -13,7 +10,6 @@ import graphql.language.ObjectTypeDefinition;
 import io.github.graphite.codegen.CodeGeneratorConfig;
 import io.github.graphite.codegen.TypeMapper;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import javax.annotation.processing.Generated;
 import javax.lang.model.element.Modifier;
@@ -29,8 +25,8 @@ import java.util.Objects;
  *   <li>Final fields for each GraphQL field</li>
  *   <li>Constructor with all fields</li>
  *   <li>Getter methods for each field</li>
- *   <li>{@link NotNull} or {@link Nullable} annotations based on nullability</li>
- *   <li>Jackson {@link JsonProperty} annotations for serialization</li>
+ *   <li>{@code @NotNull} or {@code @Nullable} annotations based on nullability</li>
+ *   <li>Jackson {@code @JsonProperty} annotations for serialization</li>
  *   <li>JavaDoc from GraphQL descriptions</li>
  * </ul>
  *
@@ -99,7 +95,7 @@ public final class TypeGenerator {
         Objects.requireNonNull(typeDef, "typeDef must not be null");
 
         String typeName = typeDef.getName();
-        List<FieldInfo> fields = new ArrayList<>();
+        List<GeneratorUtils.FieldInfo> fields = new ArrayList<>();
 
         for (FieldDefinition field : typeDef.getFieldDefinitions()) {
             fields.add(createFieldInfo(field));
@@ -117,73 +113,39 @@ public final class TypeGenerator {
         }
 
         // Add fields
-        for (FieldInfo field : fields) {
-            classBuilder.addField(FieldSpec.builder(field.type, field.name, Modifier.PRIVATE, Modifier.FINAL)
+        for (GeneratorUtils.FieldInfo field : fields) {
+            classBuilder.addField(FieldSpec.builder(field.type(), field.name(), Modifier.PRIVATE, Modifier.FINAL)
                     .build());
         }
 
         // Add constructor
-        classBuilder.addMethod(createConstructor(fields));
+        classBuilder.addMethod(GeneratorUtils.createConstructor(fields));
 
         // Add getter methods
-        for (FieldInfo field : fields) {
-            classBuilder.addMethod(createGetter(field));
+        for (GeneratorUtils.FieldInfo field : fields) {
+            classBuilder.addMethod(GeneratorUtils.createGetter(field));
         }
 
-        // Convert to GeneratorUtils.FieldInfo for shared methods
-        List<GeneratorUtils.FieldInfo> utilFields = fields.stream()
-                .map(f -> new GeneratorUtils.FieldInfo(f.name, f.type, f.nonNull))
-                .toList();
-
         // Add equals method
-        classBuilder.addMethod(GeneratorUtils.createEquals(typeName, utilFields));
+        classBuilder.addMethod(GeneratorUtils.createEquals(typeName, fields));
 
         // Add hashCode method
-        classBuilder.addMethod(GeneratorUtils.createHashCode(utilFields));
+        classBuilder.addMethod(GeneratorUtils.createHashCode(fields));
 
         // Add toString method
-        classBuilder.addMethod(GeneratorUtils.createToString(typeName, utilFields));
+        classBuilder.addMethod(GeneratorUtils.createToString(typeName, fields));
 
         return JavaFile.builder(packageName, classBuilder.build())
                 .indent("    ")
                 .build();
     }
 
-    private FieldInfo createFieldInfo(FieldDefinition field) {
+    private GeneratorUtils.FieldInfo createFieldInfo(FieldDefinition field) {
         String fieldName = field.getName();
         boolean isNonNull = field.getType() instanceof NonNullType;
-        TypeName javaType = typeMapper.mapType(field.getType());
-        return new FieldInfo(fieldName, javaType, isNonNull);
-    }
-
-    private MethodSpec createConstructor(List<FieldInfo> fields) {
-        MethodSpec.Builder constructor = MethodSpec.constructorBuilder()
-                .addModifiers(Modifier.PUBLIC);
-
-        for (FieldInfo field : fields) {
-            constructor.addParameter(field.type, field.name);
-            constructor.addStatement("this.$N = $N", field.name, field.name);
-        }
-
-        return constructor.build();
-    }
-
-    private MethodSpec createGetter(FieldInfo field) {
-        MethodSpec.Builder getter = MethodSpec.methodBuilder(field.name)
-                .addModifiers(Modifier.PUBLIC)
-                .returns(field.type)
-                .addAnnotation(AnnotationSpec.builder(JsonProperty.class)
-                        .addMember("value", "$S", field.name)
-                        .build());
-
-        if (field.nonNull) {
-            getter.addAnnotation(NotNull.class);
-        } else {
-            getter.addAnnotation(Nullable.class);
-        }
-
-        getter.addStatement("return $N", field.name);
-        return getter.build();
+        com.squareup.javapoet.TypeName javaType = typeMapper.mapType(field.getType());
+        String description = field.getDescription() != null ? field.getDescription().getContent() : null;
+        return new GeneratorUtils.FieldInfo(fieldName, javaType, isNonNull, description);
     }
 
     /**
@@ -205,6 +167,4 @@ public final class TypeGenerator {
     public TypeMapper typeMapper() {
         return typeMapper;
     }
-
-    private record FieldInfo(String name, TypeName type, boolean nonNull) {}
 }
