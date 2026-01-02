@@ -22,8 +22,9 @@ jobs:
         run: git fetch origin ${{ github.base_ref }}:refs/remotes/origin/${{ github.base_ref }}
 
       - name: Validate Branch Name
+        env:
+          BRANCH: ${{ github.head_ref }}
         run: |
-          BRANCH="${{ github.head_ref }}"
           echo "Checking branch: $BRANCH"
           
           # Pattern: <issue-number>-<description>
@@ -106,8 +107,9 @@ jobs:
           fi
 
       - name: Validate PR Title
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
         run: |
-          TITLE="${{ github.event.pull_request.title }}"
           echo "Checking PR title: $TITLE"
           
           # Check for colon after issue number
