@@ -10,6 +10,7 @@ micrometer = "1.12.4"
 mockito = "5.11.0"
 slf4j = "2.0.12"
 spring-boot = "3.2.4"
+wiremock = "3.5.4"
 
 [libraries]
 graphql-java = { module = "com.graphql-java:graphql-java", version.ref = "graphql-java" }
@@ -25,6 +26,7 @@ micrometer-core = { module = "io.micrometer:micrometer-core", version.ref = "mic
 mockito-core = { module = "org.mockito:mockito-core", version.ref = "mockito" }
 slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
 spring-boot-autoconfigure = { module = "org.springframework.boot:spring-boot-autoconfigure", version.ref = "spring-boot" }
+wiremock = { module = "org.wiremock:wiremock-standalone", version.ref = "wiremock" }
 
 [bundles]
 jackson = ["jackson-databind", "jackson-datatype-jsr310"]
