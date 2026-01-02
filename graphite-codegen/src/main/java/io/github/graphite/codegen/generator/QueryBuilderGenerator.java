@@ -97,7 +97,7 @@ public final class QueryBuilderGenerator {
         Objects.requireNonNull(field, "field must not be null");
 
         String fieldName = field.getName();
-        String className = capitalize(fieldName) + "Query";
+        String className = GeneratorUtils.capitalize(fieldName) + "Query";
         String returnTypeName = getBaseTypeName(field.getType());
         String selectorName = returnTypeName + "Selector";
 
@@ -246,13 +246,6 @@ public final class QueryBuilderGenerator {
             return typeName.getName();
         }
         return "Unknown";
-    }
-
-    private String capitalize(String str) {
-        if (str == null || str.isEmpty()) {
-            return str;
-        }
-        return Character.toUpperCase(str.charAt(0)) + str.substring(1);
     }
 
     /**
