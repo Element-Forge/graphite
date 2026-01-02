@@ -97,19 +97,20 @@ public class GraphitePlugin implements Plugin<Project> {
                 }
         );
 
-        // Register the introspect task (implementation in IntrospectSchemaTask)
-        project.getTasks().register(INTROSPECT_TASK_NAME, task -> {
-            task.setGroup("graphite");
-            task.setDescription("Downloads GraphQL schema via introspection query.");
-
-            // Task will be replaced with actual implementation in Issue #54
-            task.doLast(t -> {
-                if (!extension.getIntrospection().getEndpoint().isPresent()) {
-                    throw new IllegalStateException("introspection.endpoint must be configured");
+        // Register the introspect task
+        project.getTasks().register(
+                INTROSPECT_TASK_NAME,
+                IntrospectSchemaTask.class,
+                task -> {
+                    task.getEndpoint().set(extension.getIntrospection().getEndpoint());
+                    task.getHeaders().set(extension.getIntrospection().getHeaders());
+                    // Default output file to src/main/graphql/schema.graphqls
+                    task.getOutputFile().convention(
+                            project.getLayout().getProjectDirectory()
+                                    .file("src/main/graphql/schema.graphqls")
+                    );
                 }
-                project.getLogger().lifecycle("Graphite: Introspect task placeholder - implementation coming in Issue #54");
-            });
-        });
+        );
 
         // Make compileJava depend on the generate task
         project.getTasks().named(JavaPlugin.COMPILE_JAVA_TASK_NAME, task -> {
