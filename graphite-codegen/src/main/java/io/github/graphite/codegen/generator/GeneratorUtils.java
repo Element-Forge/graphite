@@ -1,9 +1,12 @@
 package io.github.graphite.codegen.generator;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.squareup.javapoet.AnnotationSpec;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.ParameterSpec;
 import com.squareup.javapoet.ParameterizedTypeName;
+import com.squareup.javapoet.TypeName;
 import graphql.language.FieldDefinition;
 import graphql.language.InputValueDefinition;
 import graphql.language.ListType;
@@ -11,6 +14,7 @@ import graphql.language.NonNullType;
 import graphql.language.Type;
 import io.github.graphite.codegen.TypeMapper;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import javax.lang.model.element.Modifier;
 import java.util.List;
@@ -380,8 +384,48 @@ final class GeneratorUtils {
      * @param name the field name
      * @param type the Java type
      * @param nonNull whether the field is non-null
+     * @param description the field description for JavaDoc, may be null
      */
-    record FieldInfo(String name, com.squareup.javapoet.TypeName type, boolean nonNull) {}
+    record FieldInfo(String name, TypeName type, boolean nonNull, @Nullable String description) {
+        /**
+         * Creates a FieldInfo without a description.
+         */
+        FieldInfo(String name, TypeName type, boolean nonNull) {
+            this(name, type, nonNull, null);
+        }
+    }
+
+    /**
+     * Creates a getter method for a field.
+     *
+     * @param field the field information
+     * @return the generated getter method
+     */
+    @NotNull
+    static MethodSpec createGetter(@NotNull FieldInfo field) {
+        MethodSpec.Builder getter = MethodSpec.methodBuilder(field.name())
+                .addModifiers(Modifier.PUBLIC)
+                .returns(field.type())
+                .addAnnotation(AnnotationSpec.builder(JsonProperty.class)
+                        .addMember("value", "$S", field.name())
+                        .build());
+
+        // Add JavaDoc from description
+        if (field.description() != null) {
+            getter.addJavadoc("$L\n", field.description());
+            getter.addJavadoc("\n");
+        }
+        getter.addJavadoc("@return the $L value\n", field.name());
+
+        if (field.nonNull()) {
+            getter.addAnnotation(NotNull.class);
+        } else {
+            getter.addAnnotation(Nullable.class);
+        }
+
+        getter.addStatement("return $N", field.name());
+        return getter.build();
+    }
 
     /**
      * Configuration for building operation builder classes.

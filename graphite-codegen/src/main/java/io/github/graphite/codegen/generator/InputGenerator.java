@@ -1,12 +1,10 @@
 package io.github.graphite.codegen.generator;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.squareup.javapoet.AnnotationSpec;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.FieldSpec;
 import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.MethodSpec;
-import com.squareup.javapoet.TypeName;
 import com.squareup.javapoet.TypeSpec;
 import graphql.language.InputObjectTypeDefinition;
 import graphql.language.InputValueDefinition;
@@ -14,7 +12,6 @@ import graphql.language.NonNullType;
 import io.github.graphite.codegen.CodeGeneratorConfig;
 import io.github.graphite.codegen.TypeMapper;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import javax.annotation.processing.Generated;
 import javax.lang.model.element.Modifier;
@@ -78,7 +75,7 @@ public final class InputGenerator {
         Objects.requireNonNull(inputDef, "inputDef must not be null");
 
         String typeName = inputDef.getName();
-        List<FieldInfo> fields = new ArrayList<>();
+        List<GeneratorUtils.FieldInfo> fields = new ArrayList<>();
 
         for (InputValueDefinition field : inputDef.getInputValueDefinitions()) {
             fields.add(createFieldInfo(field));
@@ -96,8 +93,8 @@ public final class InputGenerator {
         }
 
         // Add fields
-        for (FieldInfo field : fields) {
-            classBuilder.addField(FieldSpec.builder(field.type, field.name, Modifier.PRIVATE, Modifier.FINAL)
+        for (GeneratorUtils.FieldInfo field : fields) {
+            classBuilder.addField(FieldSpec.builder(field.type(), field.name(), Modifier.PRIVATE, Modifier.FINAL)
                     .build());
         }
 
@@ -105,8 +102,8 @@ public final class InputGenerator {
         classBuilder.addMethod(createConstructor(fields));
 
         // Add getter methods
-        for (FieldInfo field : fields) {
-            classBuilder.addMethod(createGetter(field));
+        for (GeneratorUtils.FieldInfo field : fields) {
+            classBuilder.addMethod(GeneratorUtils.createGetter(field));
         }
 
         // Add builder if enabled
@@ -116,64 +113,34 @@ public final class InputGenerator {
             classBuilder.addType(createBuilderClass(typeName, fields));
         }
 
-        // Convert to GeneratorUtils.FieldInfo for shared methods
-        List<GeneratorUtils.FieldInfo> utilFields = fields.stream()
-                .map(f -> new GeneratorUtils.FieldInfo(f.name, f.type, f.nonNull))
-                .toList();
-
         // Add equals, hashCode, toString
-        classBuilder.addMethod(GeneratorUtils.createEquals(typeName, utilFields));
-        classBuilder.addMethod(GeneratorUtils.createHashCode(utilFields));
-        classBuilder.addMethod(GeneratorUtils.createToString(typeName, utilFields));
+        classBuilder.addMethod(GeneratorUtils.createEquals(typeName, fields));
+        classBuilder.addMethod(GeneratorUtils.createHashCode(fields));
+        classBuilder.addMethod(GeneratorUtils.createToString(typeName, fields));
 
         return JavaFile.builder(packageName, classBuilder.build())
                 .indent("    ")
                 .build();
     }
 
-    private FieldInfo createFieldInfo(InputValueDefinition field) {
+    private GeneratorUtils.FieldInfo createFieldInfo(InputValueDefinition field) {
         String fieldName = field.getName();
         boolean isNonNull = field.getType() instanceof NonNullType;
-        TypeName javaType = typeMapper.mapType(field.getType());
+        com.squareup.javapoet.TypeName javaType = typeMapper.mapType(field.getType());
         String description = field.getDescription() != null ? field.getDescription().getContent() : null;
-        return new FieldInfo(fieldName, javaType, isNonNull, description);
+        return new GeneratorUtils.FieldInfo(fieldName, javaType, isNonNull, description);
     }
 
-    private MethodSpec createConstructor(List<FieldInfo> fields) {
+    private MethodSpec createConstructor(List<GeneratorUtils.FieldInfo> fields) {
         MethodSpec.Builder constructor = MethodSpec.constructorBuilder()
                 .addModifiers(Modifier.PUBLIC);
 
-        for (FieldInfo field : fields) {
-            constructor.addParameter(field.type, field.name);
-            constructor.addStatement("this.$N = $N", field.name, field.name);
+        for (GeneratorUtils.FieldInfo field : fields) {
+            constructor.addParameter(field.type(), field.name());
+            constructor.addStatement("this.$N = $N", field.name(), field.name());
         }
 
         return constructor.build();
-    }
-
-    private MethodSpec createGetter(FieldInfo field) {
-        MethodSpec.Builder getter = MethodSpec.methodBuilder(field.name)
-                .addModifiers(Modifier.PUBLIC)
-                .returns(field.type)
-                .addAnnotation(AnnotationSpec.builder(JsonProperty.class)
-                        .addMember("value", "$S", field.name)
-                        .build());
-
-        // Add JavaDoc from description
-        if (field.description != null) {
-            getter.addJavadoc("$L\n", field.description);
-            getter.addJavadoc("\n");
-        }
-        getter.addJavadoc("@return the $L value\n", field.name);
-
-        if (field.nonNull) {
-            getter.addAnnotation(NotNull.class);
-        } else {
-            getter.addAnnotation(Nullable.class);
-        }
-
-        getter.addStatement("return $N", field.name);
-        return getter.build();
     }
 
     private MethodSpec createBuilderMethod(String typeName) {
@@ -184,55 +151,50 @@ public final class InputGenerator {
                 .build();
     }
 
-    private MethodSpec createToBuilderMethod(String typeName, List<FieldInfo> fields) {
+    private MethodSpec createToBuilderMethod(String typeName, List<GeneratorUtils.FieldInfo> fields) {
         MethodSpec.Builder method = MethodSpec.methodBuilder("toBuilder")
                 .addModifiers(Modifier.PUBLIC)
                 .returns(ClassName.get(packageName, typeName, "Builder"));
 
-        StringBuilder sb = new StringBuilder("return new Builder()");
-        for (FieldInfo field : fields) {
-            sb.append(".$N($N)").replace(sb.indexOf("$N"), sb.indexOf("$N") + 2, field.name);
-        }
-
         // Build chained calls
         method.addCode("return new Builder()");
-        for (FieldInfo field : fields) {
-            method.addCode("\n        .$N($N)", field.name, field.name);
+        for (GeneratorUtils.FieldInfo field : fields) {
+            method.addCode("\n        .$N($N)", field.name(), field.name());
         }
         method.addStatement("");
 
         return method.build();
     }
 
-    private TypeSpec createBuilderClass(String typeName, List<FieldInfo> fields) {
+    private TypeSpec createBuilderClass(String typeName, List<GeneratorUtils.FieldInfo> fields) {
         TypeSpec.Builder builder = TypeSpec.classBuilder("Builder")
                 .addModifiers(Modifier.PUBLIC, Modifier.STATIC, Modifier.FINAL);
 
         // Add fields
-        for (FieldInfo field : fields) {
-            builder.addField(FieldSpec.builder(field.type, field.name, Modifier.PRIVATE).build());
+        for (GeneratorUtils.FieldInfo field : fields) {
+            builder.addField(FieldSpec.builder(field.type(), field.name(), Modifier.PRIVATE).build());
         }
 
         // Add setter methods
-        for (FieldInfo field : fields) {
-            MethodSpec.Builder setter = MethodSpec.methodBuilder(field.name)
+        for (GeneratorUtils.FieldInfo field : fields) {
+            MethodSpec.Builder setter = MethodSpec.methodBuilder(field.name())
                     .addModifiers(Modifier.PUBLIC)
                     .returns(ClassName.get(packageName, typeName, "Builder"))
-                    .addParameter(field.type, field.name);
+                    .addParameter(field.type(), field.name());
 
             // Add JavaDoc from description
-            if (field.description != null) {
-                setter.addJavadoc("$L\n", field.description);
+            if (field.description() != null) {
+                setter.addJavadoc("$L\n", field.description());
                 setter.addJavadoc("\n");
             }
-            setter.addJavadoc("@param $L the $L value\n", field.name, field.name);
+            setter.addJavadoc("@param $L the $L value\n", field.name(), field.name());
             setter.addJavadoc("@return this builder\n");
 
-            if (field.nonNull) {
+            if (field.nonNull()) {
                 setter.addAnnotation(NotNull.class);
             }
 
-            setter.addStatement("this.$N = $N", field.name, field.name);
+            setter.addStatement("this.$N = $N", field.name(), field.name());
             setter.addStatement("return this");
             builder.addMethod(setter.build());
         }
@@ -243,10 +205,10 @@ public final class InputGenerator {
                 .returns(ClassName.get(packageName, typeName));
 
         // Add validation for required fields
-        for (FieldInfo field : fields) {
-            if (field.nonNull) {
-                buildMethod.beginControlFlow("if ($N == null)", field.name);
-                buildMethod.addStatement("throw new $T($S)", IllegalStateException.class, field.name + " is required");
+        for (GeneratorUtils.FieldInfo field : fields) {
+            if (field.nonNull()) {
+                buildMethod.beginControlFlow("if ($N == null)", field.name());
+                buildMethod.addStatement("throw new $T($S)", IllegalStateException.class, field.name() + " is required");
                 buildMethod.endControlFlow();
             }
         }
@@ -254,7 +216,7 @@ public final class InputGenerator {
         StringBuilder args = new StringBuilder();
         for (int i = 0; i < fields.size(); i++) {
             if (i > 0) args.append(", ");
-            args.append(fields.get(i).name);
+            args.append(fields.get(i).name());
         }
         buildMethod.addStatement("return new $L($L)", typeName, args.toString());
 
@@ -281,6 +243,4 @@ public final class InputGenerator {
     public boolean generateBuilders() {
         return generateBuilders;
     }
-
-    private record FieldInfo(String name, TypeName type, boolean nonNull, String description) {}
 }
