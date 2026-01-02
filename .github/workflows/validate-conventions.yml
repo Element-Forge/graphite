@@ -182,3 +182,107 @@ jobs:
           fi
           
           echo "✅ PR body contains issue reference"
+      - name: Validate .gitignore
+        run: |
+          errors=()
+
+          # Check .gitignore exists
+          if [[ ! -f .gitignore ]]; then
+            echo "::error::.gitignore file not found"
+            exit 1
+          fi
+          echo "✓ .gitignore file exists"
+
+          # Check only one .gitignore exists
+          gitignore_files=$(find . -name '.gitignore' -not -path './.git/*')
+          count=$(echo "$gitignore_files" | wc -l)
+          if [[ $count -gt 1 ]]; then
+            errors+=("Found multiple .gitignore files. Only one root .gitignore is allowed:")
+            errors+=("$gitignore_files")
+          else
+            echo "✓ Only one .gitignore file exists"
+          fi
+
+          # Check for trailing whitespace
+          if grep -qn '[[:space:]]$' .gitignore; then
+            while IFS=: read -r line_num content; do
+              errors+=("Line $line_num: Trailing whitespace found: '$content'")
+            done < <(grep -n '[[:space:]]$' .gitignore)
+          else
+            echo "✓ No trailing whitespace found"
+          fi
+
+          # Check for duplicate entries
+          duplicates=$(grep -v '^#' .gitignore | grep -v '^[[:space:]]*$' | sort | uniq -d)
+          if [[ -n "$duplicates" ]]; then
+            errors+=("Found duplicate entries: $duplicates")
+          else
+            echo "✓ No duplicate entries found"
+          fi
+
+          # Check all entries start with /
+          line_num=0
+          while IFS= read -r line || [[ -n "$line" ]]; do
+            ((++line_num))
+            [[ -z "$line" || "$line" =~ ^[[:space:]]*# ]] && continue
+            if [[ ! "$line" =~ ^!?/ ]]; then
+              errors+=("Line $line_num: Entry must start with '/': $line")
+            fi
+          done < .gitignore
+          if [[ ${#errors[@]} -eq 0 ]] || ! printf '%s\n' "${errors[@]}" | grep -q "must start with"; then
+            echo "✓ All entries start with /"
+          fi
+
+          # Check directories end with /
+          line_num=0
+          while IFS= read -r line || [[ -n "$line" ]]; do
+            ((++line_num))
+            [[ -z "$line" || "$line" =~ ^[[:space:]]*# ]] && continue
+            pattern="${line#!}"
+            [[ "$pattern" =~ \* ]] && continue
+            check_path="${pattern#/}"
+            if [[ -d "$check_path" && ! "$line" =~ /$ ]]; then
+              errors+=("Line $line_num: Directory entry must end with '/': $line")
+            fi
+          done < .gitignore
+          echo "✓ Directory entries checked"
+
+          # Check entries are sorted alphabetically
+          patterns=$(grep -v '^#' .gitignore | grep -v '^[[:space:]]*$')
+          sorted=$(echo "$patterns" | LC_ALL=C sort -f)
+          if [[ "$patterns" != "$sorted" ]]; then
+            errors+=("Entries are not sorted alphabetically. Expected order:")
+            errors+=("$sorted")
+          else
+            echo "✓ All entries are sorted alphabetically"
+          fi
+
+          # Report errors
+          if [[ ${#errors[@]} -gt 0 ]]; then
+            echo ""
+            echo "::error::Validation failed with ${#errors[@]} error(s):"
+            for err in "${errors[@]}"; do
+              echo "  - $err"
+            done
+            exit 1
+          fi
+
+          # Summary
+          echo ""
+          echo "## .gitignore Validation Summary" >> $GITHUB_STEP_SUMMARY
+          total_lines=$(wc -l < .gitignore)
+          pattern_lines=$(grep -cv '^#\|^[[:space:]]*$' .gitignore || true)
+          comment_lines=$(grep -c '^#' .gitignore || true)
+          echo "| Metric | Count |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Total lines | $total_lines |" >> $GITHUB_STEP_SUMMARY
+          echo "| Patterns | $pattern_lines |" >> $GITHUB_STEP_SUMMARY
+          echo "| Comments | $comment_lines |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Rules Validated" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Only one .gitignore file in repository" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ All entries start with \`/\`" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ All directories end with \`/\`" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ All entries sorted alphabetically" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ No duplicate entries" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ No trailing whitespace" >> $GITHUB_STEP_SUMMARY
