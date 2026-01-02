@@ -372,4 +372,84 @@ class GeneratorUtilsTest {
         assertEquals("select", method.name);
         assertTrue(method.toString().contains("buildArgs()"));
     }
+
+    @Test
+    void createBuildArgsMethodStringArg() {
+        FieldDefinition field = FieldDefinition.newFieldDefinition()
+                .name("user")
+                .type(graphql.language.TypeName.newTypeName("User").build())
+                .inputValueDefinition(InputValueDefinition.newInputValueDefinition()
+                        .name("id")
+                        .type(graphql.language.TypeName.newTypeName("ID").build())
+                        .build())
+                .build();
+
+        MethodSpec method = GeneratorUtils.createBuildArgsMethod(field);
+
+        assertEquals("buildArgs", method.name);
+        String code = method.toString();
+        assertTrue(code.contains("id: "));
+        assertTrue(code.contains("append(\"\\\"\")"));
+    }
+
+    @Test
+    void createBuildArgsMethodInputTypeArg() {
+        FieldDefinition field = FieldDefinition.newFieldDefinition()
+                .name("createUser")
+                .type(graphql.language.TypeName.newTypeName("User").build())
+                .inputValueDefinition(InputValueDefinition.newInputValueDefinition()
+                        .name("input")
+                        .type(graphql.language.TypeName.newTypeName("CreateUserInput").build())
+                        .build())
+                .build();
+
+        MethodSpec method = GeneratorUtils.createBuildArgsMethod(field);
+
+        assertEquals("buildArgs", method.name);
+        String code = method.toString();
+        assertTrue(code.contains("input: "));
+        assertTrue(code.contains("toGraphQL()"));
+    }
+
+    @Test
+    void createBuildArgsMethodNumericArg() {
+        FieldDefinition field = FieldDefinition.newFieldDefinition()
+                .name("users")
+                .type(graphql.language.TypeName.newTypeName("User").build())
+                .inputValueDefinition(InputValueDefinition.newInputValueDefinition()
+                        .name("limit")
+                        .type(graphql.language.TypeName.newTypeName("Int").build())
+                        .build())
+                .build();
+
+        MethodSpec method = GeneratorUtils.createBuildArgsMethod(field);
+
+        assertEquals("buildArgs", method.name);
+        String code = method.toString();
+        assertTrue(code.contains("limit: "));
+        assertTrue(code.contains("sb.append(limit)"));
+    }
+
+    @Test
+    void createBuildArgsMethodMultipleArgs() {
+        FieldDefinition field = FieldDefinition.newFieldDefinition()
+                .name("users")
+                .type(graphql.language.TypeName.newTypeName("User").build())
+                .inputValueDefinition(InputValueDefinition.newInputValueDefinition()
+                        .name("limit")
+                        .type(graphql.language.TypeName.newTypeName("Int").build())
+                        .build())
+                .inputValueDefinition(InputValueDefinition.newInputValueDefinition()
+                        .name("offset")
+                        .type(graphql.language.TypeName.newTypeName("Int").build())
+                        .build())
+                .build();
+
+        MethodSpec method = GeneratorUtils.createBuildArgsMethod(field);
+
+        assertEquals("buildArgs", method.name);
+        String code = method.toString();
+        assertTrue(code.contains("limit: "));
+        assertTrue(code.contains(", offset: "));
+    }
 }

@@ -131,54 +131,12 @@ public final class MutationBuilderGenerator {
 
         // Add buildArgs method if there are arguments
         if (!field.getInputValueDefinitions().isEmpty()) {
-            classBuilder.addMethod(createBuildArgsMethod(field));
+            classBuilder.addMethod(GeneratorUtils.createBuildArgsMethod(field));
         }
 
         return JavaFile.builder(packageName, classBuilder.build())
                 .indent("    ")
                 .build();
-    }
-
-    private MethodSpec createBuildArgsMethod(FieldDefinition field) {
-        MethodSpec.Builder method = MethodSpec.methodBuilder("buildArgs")
-                .addModifiers(Modifier.PRIVATE)
-                .returns(String.class);
-
-        method.addStatement("$T sb = new $T()", StringBuilder.class, StringBuilder.class);
-        method.addStatement("sb.append(\"(\")");
-
-        boolean first = true;
-        for (InputValueDefinition arg : field.getInputValueDefinitions()) {
-            String argName = arg.getName();
-            if (first) {
-                method.addStatement("sb.append($S)", argName + ": ");
-                first = false;
-            } else {
-                method.addStatement("sb.append($S)", ", " + argName + ": ");
-            }
-
-            // Handle different types for argument formatting
-            if (GeneratorUtils.isStringType(arg.getType())) {
-                method.beginControlFlow("if ($N != null)", argName);
-                method.addStatement("sb.append(\"\\\"\").append($N).append(\"\\\"\")", argName);
-                method.nextControlFlow("else");
-                method.addStatement("sb.append(\"null\")");
-                method.endControlFlow();
-            } else if (GeneratorUtils.isInputType(arg.getType())) {
-                method.beginControlFlow("if ($N != null)", argName);
-                method.addStatement("sb.append($N.toGraphQL())", argName);
-                method.nextControlFlow("else");
-                method.addStatement("sb.append(\"null\")");
-                method.endControlFlow();
-            } else {
-                method.addStatement("sb.append($N)", argName);
-            }
-        }
-
-        method.addStatement("sb.append(\")\")");
-        method.addStatement("return sb.toString()");
-
-        return method.build();
     }
 
     /**

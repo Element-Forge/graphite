@@ -281,6 +281,55 @@ final class GeneratorUtils {
     }
 
     /**
+     * Creates a buildArgs method that serializes field arguments to GraphQL format.
+     *
+     * @param field the field definition
+     * @return the generated buildArgs method
+     */
+    @NotNull
+    static MethodSpec createBuildArgsMethod(@NotNull FieldDefinition field) {
+        MethodSpec.Builder method = MethodSpec.methodBuilder("buildArgs")
+                .addModifiers(Modifier.PRIVATE)
+                .returns(String.class);
+
+        method.addStatement("$T sb = new $T()", StringBuilder.class, StringBuilder.class);
+        method.addStatement("sb.append(\"(\")");
+
+        boolean first = true;
+        for (InputValueDefinition arg : field.getInputValueDefinitions()) {
+            String argName = arg.getName();
+            if (first) {
+                method.addStatement("sb.append($S)", argName + ": ");
+                first = false;
+            } else {
+                method.addStatement("sb.append($S)", ", " + argName + ": ");
+            }
+
+            // Handle different types for argument formatting
+            if (isStringType(arg.getType())) {
+                method.beginControlFlow("if ($N != null)", argName);
+                method.addStatement("sb.append(\"\\\"\").append($N).append(\"\\\"\")", argName);
+                method.nextControlFlow("else");
+                method.addStatement("sb.append(\"null\")");
+                method.endControlFlow();
+            } else if (isInputType(arg.getType())) {
+                method.beginControlFlow("if ($N != null)", argName);
+                method.addStatement("sb.append($N.toGraphQL())", argName);
+                method.nextControlFlow("else");
+                method.addStatement("sb.append(\"null\")");
+                method.endControlFlow();
+            } else {
+                method.addStatement("sb.append($N)", argName);
+            }
+        }
+
+        method.addStatement("sb.append(\")\")");
+        method.addStatement("return sb.toString()");
+
+        return method.build();
+    }
+
+    /**
      * Extracts the base type name from a GraphQL type.
      * Unwraps NonNullType and ListType wrappers.
      *
