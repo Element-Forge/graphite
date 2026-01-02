@@ -164,10 +164,10 @@ jobs:
           echo "✅ PR title is valid"
 
       - name: Check PR Body Contains Closes
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
         run: |
-          BODY="${{ github.event.pull_request.body }}"
-          
-          if ! echo "$BODY" | grep -qiE "(closes|fixes|resolves) #[0-9]+"; then
+          if ! echo "$PR_BODY" | grep -qiE "(closes|fixes|resolves) #[0-9]+"; then
             echo ""
             echo "=========================================="
             echo " 🤖 CLAUDE CODE REMINDER"
