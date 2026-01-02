@@ -1,0 +1,16 @@
+[versions]
+jackson = "2.17.0"
+graphql-java = "22.0"
+javapoet = "1.13.0"
+jetbrains-annotations = "24.1.0"
+slf4j = "2.0.12"
+micrometer = "1.12.4"
+
+[libraries]
+jackson-databind = { module = "com.fasterxml.jackson.core:jackson-databind", version.ref = "jackson" }
+jackson-datatype-jsr310 = { module = "com.fasterxml.jackson.datatype:jackson-datatype-jsr310", version.ref = "jackson" }
+graphql-java = { module = "com.graphql-java:graphql-java", version.ref = "graphql-java" }
+javapoet = { module = "com.squareup:javapoet", version.ref = "javapoet" }
+jetbrains-annotations = { module = "org.jetbrains:annotations", version.ref = "jetbrains-annotations" }
+slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
+micrometer-core = { module = "io.micrometer:micrometer-core", version.ref = "micrometer" }
