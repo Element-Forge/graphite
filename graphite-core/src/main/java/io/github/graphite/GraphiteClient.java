@@ -2,6 +2,8 @@ package io.github.graphite;
 
 import org.jetbrains.annotations.NotNull;
 
+import java.time.Duration;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -58,6 +60,43 @@ public interface GraphiteClient extends AutoCloseable {
          */
         @NotNull
         Builder endpoint(@NotNull String endpoint);
+
+        /**
+         * Adds a default header to be sent with every request.
+         *
+         * @param name the header name
+         * @param value the header value
+         * @return this builder
+         */
+        @NotNull
+        Builder defaultHeader(@NotNull String name, @NotNull String value);
+
+        /**
+         * Sets multiple default headers to be sent with every request.
+         *
+         * @param headers the headers map
+         * @return this builder
+         */
+        @NotNull
+        Builder defaultHeaders(@NotNull Map<String, String> headers);
+
+        /**
+         * Sets the connection timeout.
+         *
+         * @param timeout the connection timeout
+         * @return this builder
+         */
+        @NotNull
+        Builder connectTimeout(@NotNull Duration timeout);
+
+        /**
+         * Sets the read timeout (time to wait for response data).
+         *
+         * @param timeout the read timeout
+         * @return this builder
+         */
+        @NotNull
+        Builder readTimeout(@NotNull Duration timeout);
 
         /**
          * Builds and returns the configured {@link GraphiteClient}.
