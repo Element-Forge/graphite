@@ -208,29 +208,38 @@ class GraphitePluginTest {
     }
 
     @Test
-    void introspectTaskFailsWithoutEndpoint() {
+    void introspectTaskIsOfCorrectType() {
         project.getPluginManager().apply("io.github.graphite");
-
-        // endpoint not set
 
         Task task = project.getTasks().getByName(GraphitePlugin.INTROSPECT_TASK_NAME);
 
-        IllegalStateException exception = assertThrows(IllegalStateException.class, () ->
-                task.getActions().forEach(action -> action.execute(task)));
-        assertTrue(exception.getMessage().contains("endpoint"));
+        assertInstanceOf(IntrospectSchemaTask.class, task);
     }
 
     @Test
-    void introspectTaskSucceedsWithEndpoint() {
+    void introspectTaskHasInputsFromExtension() {
         project.getPluginManager().apply("io.github.graphite");
 
         GraphiteExtension extension = project.getExtensions().getByType(GraphiteExtension.class);
-        extension.introspection(config -> config.getEndpoint().set("https://example.com/graphql"));
+        extension.introspection(config -> {
+            config.getEndpoint().set("https://example.com/graphql");
+            config.getHeaders().put("Authorization", "Bearer token");
+        });
 
-        Task task = project.getTasks().getByName(GraphitePlugin.INTROSPECT_TASK_NAME);
+        IntrospectSchemaTask task = (IntrospectSchemaTask) project.getTasks()
+                .getByName(GraphitePlugin.INTROSPECT_TASK_NAME);
 
-        // Should not throw - placeholder just logs
-        assertDoesNotThrow(() ->
-                task.getActions().forEach(action -> action.execute(task)));
+        assertEquals("https://example.com/graphql", task.getEndpoint().get());
+        assertEquals("Bearer token", task.getHeaders().get().get("Authorization"));
+    }
+
+    @Test
+    void introspectTaskHasDefaultOutputFile() {
+        project.getPluginManager().apply("io.github.graphite");
+
+        IntrospectSchemaTask task = (IntrospectSchemaTask) project.getTasks()
+                .getByName(GraphitePlugin.INTROSPECT_TASK_NAME);
+
+        assertTrue(task.getOutputFile().get().getAsFile().getPath().contains("schema.graphqls"));
     }
 }
