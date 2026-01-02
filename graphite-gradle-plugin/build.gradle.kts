@@ -4,6 +4,7 @@ plugins {
 
 dependencies {
     implementation(project(":graphite-codegen"))
+    testImplementation(gradleTestKit())
 }
 
 gradlePlugin {
