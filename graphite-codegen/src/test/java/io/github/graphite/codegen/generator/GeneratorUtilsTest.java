@@ -1,6 +1,7 @@
 package io.github.graphite.codegen.generator;
 
 import com.squareup.javapoet.ClassName;
+import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.MethodSpec;
 import graphql.language.Description;
 import graphql.language.FieldDefinition;
@@ -451,5 +452,128 @@ class GeneratorUtilsTest {
         String code = method.toString();
         assertTrue(code.contains("limit: "));
         assertTrue(code.contains(", offset: "));
+    }
+
+    @Test
+    void builderConfigRecord() {
+        TypeMapper mapper = TypeMapper.create("com.example", Map.of());
+        ClassName clientClass = ClassName.get("io.github.graphite", "GraphiteClient");
+
+        GeneratorUtils.BuilderConfig config = new GeneratorUtils.BuilderConfig(
+                "com.example.query", "com.example.query", "com.example.type",
+                clientClass, mapper, "Query", "query");
+
+        assertEquals("com.example.query", config.packageName());
+        assertEquals("com.example.query", config.selectorPackageName());
+        assertEquals("com.example.type", config.typePackageName());
+        assertEquals(clientClass, config.clientClassName());
+        assertEquals(mapper, config.typeMapper());
+        assertEquals("Query", config.classSuffix());
+        assertEquals("query", config.operationType());
+    }
+
+    @Test
+    void createOperationBuilderClassQuery() {
+        TypeMapper mapper = TypeMapper.create("com.example", Map.of());
+        ClassName clientClass = ClassName.get("io.github.graphite", "GraphiteClient");
+        FieldDefinition field = FieldDefinition.newFieldDefinition()
+                .name("user")
+                .type(graphql.language.TypeName.newTypeName("User").build())
+                .build();
+
+        GeneratorUtils.BuilderConfig config = new GeneratorUtils.BuilderConfig(
+                "com.example.query", "com.example.query", "com.example.type",
+                clientClass, mapper, "Query", "query");
+
+        JavaFile javaFile = GeneratorUtils.createOperationBuilderClass(field, config);
+        String code = javaFile.toString();
+
+        assertTrue(code.contains("public final class UserQuery"));
+        assertTrue(code.contains("Query builder for the"));
+        assertTrue(code.contains("private final GraphiteClient client"));
+        assertTrue(code.contains("public ExecutableQuery<User> select"));
+    }
+
+    @Test
+    void createOperationBuilderClassMutation() {
+        TypeMapper mapper = TypeMapper.create("com.example", Map.of());
+        ClassName clientClass = ClassName.get("io.github.graphite", "GraphiteClient");
+        FieldDefinition field = FieldDefinition.newFieldDefinition()
+                .name("createUser")
+                .type(graphql.language.TypeName.newTypeName("User").build())
+                .build();
+
+        GeneratorUtils.BuilderConfig config = new GeneratorUtils.BuilderConfig(
+                "com.example.mutation", "com.example.query", "com.example.type",
+                clientClass, mapper, "Mutation", "mutation");
+
+        JavaFile javaFile = GeneratorUtils.createOperationBuilderClass(field, config);
+        String code = javaFile.toString();
+
+        assertTrue(code.contains("public final class CreateUserMutation"));
+        assertTrue(code.contains("Mutation builder for the"));
+        assertTrue(code.contains("executable mutation"));
+    }
+
+    @Test
+    void createOperationBuilderClassWithArgs() {
+        TypeMapper mapper = TypeMapper.create("com.example", Map.of());
+        ClassName clientClass = ClassName.get("io.github.graphite", "GraphiteClient");
+        FieldDefinition field = FieldDefinition.newFieldDefinition()
+                .name("user")
+                .type(graphql.language.TypeName.newTypeName("User").build())
+                .inputValueDefinition(InputValueDefinition.newInputValueDefinition()
+                        .name("id")
+                        .type(graphql.language.TypeName.newTypeName("ID").build())
+                        .build())
+                .build();
+
+        GeneratorUtils.BuilderConfig config = new GeneratorUtils.BuilderConfig(
+                "com.example.query", "com.example.query", "com.example.type",
+                clientClass, mapper, "Query", "query");
+
+        JavaFile javaFile = GeneratorUtils.createOperationBuilderClass(field, config);
+        String code = javaFile.toString();
+
+        assertTrue(code.contains("private final String id"));
+        assertTrue(code.contains("buildArgs()"));
+    }
+
+    @Test
+    void createOperationBuilderClassWithDescription() {
+        TypeMapper mapper = TypeMapper.create("com.example", Map.of());
+        ClassName clientClass = ClassName.get("io.github.graphite", "GraphiteClient");
+        FieldDefinition field = FieldDefinition.newFieldDefinition()
+                .name("user")
+                .type(graphql.language.TypeName.newTypeName("User").build())
+                .description(new Description("Get a user by ID.", null, false))
+                .build();
+
+        GeneratorUtils.BuilderConfig config = new GeneratorUtils.BuilderConfig(
+                "com.example.query", "com.example.query", "com.example.type",
+                clientClass, mapper, "Query", "query");
+
+        JavaFile javaFile = GeneratorUtils.createOperationBuilderClass(field, config);
+        String code = javaFile.toString();
+
+        assertTrue(code.contains("Get a user by ID."));
+    }
+
+    @Test
+    void createOperationBuilderClassCorrectPackage() {
+        TypeMapper mapper = TypeMapper.create("com.example", Map.of());
+        ClassName clientClass = ClassName.get("io.github.graphite", "GraphiteClient");
+        FieldDefinition field = FieldDefinition.newFieldDefinition()
+                .name("user")
+                .type(graphql.language.TypeName.newTypeName("User").build())
+                .build();
+
+        GeneratorUtils.BuilderConfig config = new GeneratorUtils.BuilderConfig(
+                "com.custom.query", "com.custom.query", "com.custom.type",
+                clientClass, mapper, "Query", "query");
+
+        JavaFile javaFile = GeneratorUtils.createOperationBuilderClass(field, config);
+
+        assertEquals("com.custom.query", javaFile.packageName);
     }
 }

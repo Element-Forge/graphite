@@ -380,4 +380,86 @@ final class GeneratorUtils {
      * @param nonNull whether the field is non-null
      */
     record FieldInfo(String name, com.squareup.javapoet.TypeName type, boolean nonNull) {}
+
+    /**
+     * Configuration for building operation builder classes.
+     *
+     * @param packageName the package name for the builder class
+     * @param selectorPackageName the package name for selectors
+     * @param typePackageName the package name for types
+     * @param clientClassName the client class name
+     * @param typeMapper the type mapper
+     * @param classSuffix "Query" or "Mutation"
+     * @param operationType "query" or "mutation"
+     */
+    record BuilderConfig(
+            String packageName,
+            String selectorPackageName,
+            String typePackageName,
+            ClassName clientClassName,
+            TypeMapper typeMapper,
+            String classSuffix,
+            String operationType
+    ) {}
+
+    /**
+     * Creates an operation builder class (query or mutation builder).
+     *
+     * @param field the field definition
+     * @param config the builder configuration
+     * @return the generated JavaFile
+     */
+    @NotNull
+    static com.squareup.javapoet.JavaFile createOperationBuilderClass(
+            @NotNull FieldDefinition field,
+            @NotNull BuilderConfig config) {
+        String fieldName = field.getName();
+        String className = capitalize(fieldName) + config.classSuffix();
+        String returnTypeName = getBaseTypeName(field.getType());
+        String selectorName = returnTypeName + "Selector";
+
+        com.squareup.javapoet.TypeSpec.Builder classBuilder = com.squareup.javapoet.TypeSpec.classBuilder(className)
+                .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
+                .addAnnotation(com.squareup.javapoet.AnnotationSpec.builder(javax.annotation.processing.Generated.class)
+                        .addMember("value", "$S", "io.github.graphite")
+                        .build());
+
+        // Add JavaDoc
+        classBuilder.addJavadoc("$L builder for the {@code $L} $L.\n",
+                config.classSuffix(), fieldName, config.operationType());
+        if (field.getDescription() != null) {
+            classBuilder.addJavadoc("\n");
+            classBuilder.addJavadoc("<p>$L</p>\n", field.getDescription().getContent());
+        }
+
+        // Add client field
+        classBuilder.addField(com.squareup.javapoet.FieldSpec.builder(
+                config.clientClassName(), "client", Modifier.PRIVATE, Modifier.FINAL).build());
+
+        // Add fields for arguments
+        for (InputValueDefinition arg : field.getInputValueDefinitions()) {
+            classBuilder.addField(com.squareup.javapoet.FieldSpec.builder(
+                    config.typeMapper().mapType(arg.getType()),
+                    arg.getName(),
+                    Modifier.PRIVATE, Modifier.FINAL
+            ).build());
+        }
+
+        // Add constructor
+        classBuilder.addMethod(createBuilderConstructor(field, config.clientClassName(), config.typeMapper()));
+
+        // Add select method
+        classBuilder.addMethod(createSelectMethod(
+                field, config.selectorPackageName(), selectorName,
+                config.typePackageName(), returnTypeName, config.operationType()));
+
+        // Add buildArgs method if there are arguments
+        if (!field.getInputValueDefinitions().isEmpty()) {
+            classBuilder.addMethod(createBuildArgsMethod(field));
+        }
+
+        return com.squareup.javapoet.JavaFile.builder(config.packageName(), classBuilder.build())
+                .indent("    ")
+                .build();
+    }
 }

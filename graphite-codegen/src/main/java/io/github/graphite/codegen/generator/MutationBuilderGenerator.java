@@ -1,19 +1,12 @@
 package io.github.graphite.codegen.generator;
 
-import com.squareup.javapoet.AnnotationSpec;
 import com.squareup.javapoet.ClassName;
-import com.squareup.javapoet.FieldSpec;
 import com.squareup.javapoet.JavaFile;
-import com.squareup.javapoet.MethodSpec;
-import com.squareup.javapoet.TypeSpec;
 import graphql.language.FieldDefinition;
-import graphql.language.InputValueDefinition;
 import io.github.graphite.codegen.CodeGeneratorConfig;
 import io.github.graphite.codegen.TypeMapper;
 import org.jetbrains.annotations.NotNull;
 
-import javax.annotation.processing.Generated;
-import javax.lang.model.element.Modifier;
 import java.util.Objects;
 
 /**
@@ -90,53 +83,11 @@ public final class MutationBuilderGenerator {
     public JavaFile generate(@NotNull FieldDefinition field) {
         Objects.requireNonNull(field, "field must not be null");
 
-        String fieldName = field.getName();
-        String className = GeneratorUtils.capitalize(fieldName) + "Mutation";
-        String returnTypeName = GeneratorUtils.getBaseTypeName(field.getType());
-        String selectorName = returnTypeName + "Selector";
-
-        TypeSpec.Builder classBuilder = TypeSpec.classBuilder(className)
-                .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
-                .addAnnotation(AnnotationSpec.builder(Generated.class)
-                        .addMember("value", "$S", "io.github.graphite")
-                        .build());
-
-        // Add JavaDoc
-        classBuilder.addJavadoc("Mutation builder for the {@code $L} mutation.\n", fieldName);
-        if (field.getDescription() != null) {
-            classBuilder.addJavadoc("\n");
-            classBuilder.addJavadoc("<p>$L</p>\n", field.getDescription().getContent());
-        }
-
-        // Add client field
-        classBuilder.addField(FieldSpec.builder(clientClassName, "client", Modifier.PRIVATE, Modifier.FINAL)
-                .build());
-
-        // Add fields for arguments
-        for (InputValueDefinition arg : field.getInputValueDefinitions()) {
-            classBuilder.addField(FieldSpec.builder(
-                    typeMapper.mapType(arg.getType()),
-                    arg.getName(),
-                    Modifier.PRIVATE, Modifier.FINAL
-            ).build());
-        }
-
-        // Add constructor
-        classBuilder.addMethod(GeneratorUtils.createBuilderConstructor(field, clientClassName, typeMapper));
-
-        // Add select method (selectors are in query package)
+        // Selectors are in query package for mutations
         String selectorPackage = packageName.replace(".mutation", ".query");
-        classBuilder.addMethod(GeneratorUtils.createSelectMethod(
-                field, selectorPackage, selectorName, typePackageName, returnTypeName, "mutation"));
-
-        // Add buildArgs method if there are arguments
-        if (!field.getInputValueDefinitions().isEmpty()) {
-            classBuilder.addMethod(GeneratorUtils.createBuildArgsMethod(field));
-        }
-
-        return JavaFile.builder(packageName, classBuilder.build())
-                .indent("    ")
-                .build();
+        GeneratorUtils.BuilderConfig config = new GeneratorUtils.BuilderConfig(
+                packageName, selectorPackage, typePackageName, clientClassName, typeMapper, "Mutation", "mutation");
+        return GeneratorUtils.createOperationBuilderClass(field, config);
     }
 
     /**
