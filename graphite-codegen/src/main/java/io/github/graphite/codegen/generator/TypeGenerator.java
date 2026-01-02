@@ -153,7 +153,8 @@ public final class TypeGenerator {
         String fieldName = field.getName();
         boolean isNonNull = field.getType() instanceof NonNullType;
         TypeName javaType = typeMapper.mapType(field.getType());
-        return new FieldInfo(fieldName, javaType, isNonNull);
+        String description = field.getDescription() != null ? field.getDescription().getContent() : null;
+        return new FieldInfo(fieldName, javaType, isNonNull, description);
     }
 
     private MethodSpec createConstructor(List<FieldInfo> fields) {
@@ -175,6 +176,13 @@ public final class TypeGenerator {
                 .addAnnotation(AnnotationSpec.builder(JsonProperty.class)
                         .addMember("value", "$S", field.name)
                         .build());
+
+        // Add JavaDoc from description
+        if (field.description != null) {
+            getter.addJavadoc("$L\n", field.description);
+            getter.addJavadoc("\n");
+        }
+        getter.addJavadoc("@return the $L value\n", field.name);
 
         if (field.nonNull) {
             getter.addAnnotation(NotNull.class);
@@ -206,5 +214,5 @@ public final class TypeGenerator {
         return typeMapper;
     }
 
-    private record FieldInfo(String name, TypeName type, boolean nonNull) {}
+    private record FieldInfo(String name, TypeName type, boolean nonNull, String description) {}
 }

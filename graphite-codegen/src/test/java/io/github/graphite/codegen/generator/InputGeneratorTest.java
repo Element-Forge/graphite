@@ -450,4 +450,57 @@ class InputGeneratorTest {
         assertThrows(NullPointerException.class, () ->
                 generator.generate(null));
     }
+
+    @Test
+    void includesFieldDescriptionAsJavadoc() {
+        InputObjectTypeDefinition inputDef = InputObjectTypeDefinition.newInputObjectDefinition()
+                .name("CreateUserInput")
+                .inputValueDefinition(InputValueDefinition.newInputValueDefinition()
+                        .name("email")
+                        .description(new Description("The user's email address.", null, false))
+                        .type(TypeName.newTypeName("String").build())
+                        .build())
+                .build();
+
+        JavaFile javaFile = generator.generate(inputDef);
+        String code = javaFile.toString();
+
+        assertTrue(code.contains("The user's email address."));
+        assertTrue(code.contains("@return the email value"));
+    }
+
+    @Test
+    void builderSetterIncludesFieldDescriptionAsJavadoc() {
+        InputObjectTypeDefinition inputDef = InputObjectTypeDefinition.newInputObjectDefinition()
+                .name("CreateUserInput")
+                .inputValueDefinition(InputValueDefinition.newInputValueDefinition()
+                        .name("email")
+                        .description(new Description("The user's email address.", null, false))
+                        .type(TypeName.newTypeName("String").build())
+                        .build())
+                .build();
+
+        JavaFile javaFile = generatorWithBuilders.generate(inputDef);
+        String code = javaFile.toString();
+
+        assertTrue(code.contains("The user's email address."));
+        assertTrue(code.contains("@param email the email value"));
+        assertTrue(code.contains("@return this builder"));
+    }
+
+    @Test
+    void getterHasReturnJavadocEvenWithoutDescription() {
+        InputObjectTypeDefinition inputDef = InputObjectTypeDefinition.newInputObjectDefinition()
+                .name("CreateUserInput")
+                .inputValueDefinition(InputValueDefinition.newInputValueDefinition()
+                        .name("name")
+                        .type(TypeName.newTypeName("String").build())
+                        .build())
+                .build();
+
+        JavaFile javaFile = generator.generate(inputDef);
+        String code = javaFile.toString();
+
+        assertTrue(code.contains("@return the name value"));
+    }
 }

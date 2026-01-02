@@ -135,7 +135,8 @@ public final class InputGenerator {
         String fieldName = field.getName();
         boolean isNonNull = field.getType() instanceof NonNullType;
         TypeName javaType = typeMapper.mapType(field.getType());
-        return new FieldInfo(fieldName, javaType, isNonNull);
+        String description = field.getDescription() != null ? field.getDescription().getContent() : null;
+        return new FieldInfo(fieldName, javaType, isNonNull, description);
     }
 
     private MethodSpec createConstructor(List<FieldInfo> fields) {
@@ -157,6 +158,13 @@ public final class InputGenerator {
                 .addAnnotation(AnnotationSpec.builder(JsonProperty.class)
                         .addMember("value", "$S", field.name)
                         .build());
+
+        // Add JavaDoc from description
+        if (field.description != null) {
+            getter.addJavadoc("$L\n", field.description);
+            getter.addJavadoc("\n");
+        }
+        getter.addJavadoc("@return the $L value\n", field.name);
 
         if (field.nonNull) {
             getter.addAnnotation(NotNull.class);
@@ -212,6 +220,14 @@ public final class InputGenerator {
                     .returns(ClassName.get(packageName, typeName, "Builder"))
                     .addParameter(field.type, field.name);
 
+            // Add JavaDoc from description
+            if (field.description != null) {
+                setter.addJavadoc("$L\n", field.description);
+                setter.addJavadoc("\n");
+            }
+            setter.addJavadoc("@param $L the $L value\n", field.name, field.name);
+            setter.addJavadoc("@return this builder\n");
+
             if (field.nonNull) {
                 setter.addAnnotation(NotNull.class);
             }
@@ -266,5 +282,5 @@ public final class InputGenerator {
         return generateBuilders;
     }
 
-    private record FieldInfo(String name, TypeName type, boolean nonNull) {}
+    private record FieldInfo(String name, TypeName type, boolean nonNull, String description) {}
 }

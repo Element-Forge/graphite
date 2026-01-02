@@ -328,4 +328,38 @@ class TypeGeneratorTest {
         assertThrows(NullPointerException.class, () ->
                 generator.generate(null));
     }
+
+    @Test
+    void includesFieldDescriptionAsJavadoc() {
+        ObjectTypeDefinition typeDef = ObjectTypeDefinition.newObjectTypeDefinition()
+                .name("User")
+                .fieldDefinition(FieldDefinition.newFieldDefinition()
+                        .name("email")
+                        .description(new Description("The user's email address.", null, false))
+                        .type(TypeName.newTypeName("String").build())
+                        .build())
+                .build();
+
+        JavaFile javaFile = generator.generate(typeDef);
+        String code = javaFile.toString();
+
+        assertTrue(code.contains("The user's email address."));
+        assertTrue(code.contains("@return the email value"));
+    }
+
+    @Test
+    void getterHasReturnJavadocEvenWithoutDescription() {
+        ObjectTypeDefinition typeDef = ObjectTypeDefinition.newObjectTypeDefinition()
+                .name("User")
+                .fieldDefinition(FieldDefinition.newFieldDefinition()
+                        .name("name")
+                        .type(TypeName.newTypeName("String").build())
+                        .build())
+                .build();
+
+        JavaFile javaFile = generator.generate(typeDef);
+        String code = javaFile.toString();
+
+        assertTrue(code.contains("@return the name value"));
+    }
 }
