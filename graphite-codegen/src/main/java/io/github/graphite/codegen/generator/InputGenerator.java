@@ -99,7 +99,7 @@ public final class InputGenerator {
         }
 
         // Add constructor
-        classBuilder.addMethod(createConstructor(fields));
+        classBuilder.addMethod(GeneratorUtils.createConstructor(fields));
 
         // Add getter methods
         for (GeneratorUtils.FieldInfo field : fields) {
@@ -129,18 +129,6 @@ public final class InputGenerator {
         com.squareup.javapoet.TypeName javaType = typeMapper.mapType(field.getType());
         String description = field.getDescription() != null ? field.getDescription().getContent() : null;
         return new GeneratorUtils.FieldInfo(fieldName, javaType, isNonNull, description);
-    }
-
-    private MethodSpec createConstructor(List<GeneratorUtils.FieldInfo> fields) {
-        MethodSpec.Builder constructor = MethodSpec.constructorBuilder()
-                .addModifiers(Modifier.PUBLIC);
-
-        for (GeneratorUtils.FieldInfo field : fields) {
-            constructor.addParameter(field.type(), field.name());
-            constructor.addStatement("this.$N = $N", field.name(), field.name());
-        }
-
-        return constructor.build();
     }
 
     private MethodSpec createBuilderMethod(String typeName) {

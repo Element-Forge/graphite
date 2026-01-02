@@ -396,6 +396,25 @@ final class GeneratorUtils {
     }
 
     /**
+     * Creates a constructor that assigns all fields.
+     *
+     * @param fields the fields to include in the constructor
+     * @return the generated constructor
+     */
+    @NotNull
+    static MethodSpec createConstructor(@NotNull List<FieldInfo> fields) {
+        MethodSpec.Builder constructor = MethodSpec.constructorBuilder()
+                .addModifiers(Modifier.PUBLIC);
+
+        for (FieldInfo field : fields) {
+            constructor.addParameter(field.type(), field.name());
+            constructor.addStatement("this.$N = $N", field.name(), field.name());
+        }
+
+        return constructor.build();
+    }
+
+    /**
      * Creates a getter method for a field.
      *
      * @param field the field information

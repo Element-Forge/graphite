@@ -3,7 +3,6 @@ package io.github.graphite.codegen.generator;
 import com.squareup.javapoet.AnnotationSpec;
 import com.squareup.javapoet.FieldSpec;
 import com.squareup.javapoet.JavaFile;
-import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.TypeSpec;
 import graphql.language.FieldDefinition;
 import graphql.language.NonNullType;
@@ -120,7 +119,7 @@ public final class TypeGenerator {
         }
 
         // Add constructor
-        classBuilder.addMethod(createConstructor(fields));
+        classBuilder.addMethod(GeneratorUtils.createConstructor(fields));
 
         // Add getter methods
         for (GeneratorUtils.FieldInfo field : fields) {
@@ -147,18 +146,6 @@ public final class TypeGenerator {
         com.squareup.javapoet.TypeName javaType = typeMapper.mapType(field.getType());
         String description = field.getDescription() != null ? field.getDescription().getContent() : null;
         return new GeneratorUtils.FieldInfo(fieldName, javaType, isNonNull, description);
-    }
-
-    private MethodSpec createConstructor(List<GeneratorUtils.FieldInfo> fields) {
-        MethodSpec.Builder constructor = MethodSpec.constructorBuilder()
-                .addModifiers(Modifier.PUBLIC);
-
-        for (GeneratorUtils.FieldInfo field : fields) {
-            constructor.addParameter(field.type(), field.name());
-            constructor.addStatement("this.$N = $N", field.name(), field.name());
-        }
-
-        return constructor.build();
     }
 
     /**
