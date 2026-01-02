@@ -1,6 +1,6 @@
 plugins {
     id("java")
-    id("org.sonarqube") version "5.1.0.4882"
+    id("org.sonarqube") version "6.0.1.5171"
 }
 
 group = property("group") as String
