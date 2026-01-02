@@ -28,6 +28,9 @@ jobs:
       - name: Build
         run: ./gradlew build --no-daemon
 
+      - name: Verify Test Coverage (95% minimum)
+        run: ./gradlew jacocoTestCoverageVerification --no-daemon
+
       - name: Analyze with SonarCloud
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
