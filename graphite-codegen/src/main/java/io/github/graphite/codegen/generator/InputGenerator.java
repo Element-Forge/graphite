@@ -21,7 +21,6 @@ import javax.lang.model.element.Modifier;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.StringJoiner;
 
 /**
  * Generates Java classes with builders from GraphQL input type definitions.
@@ -117,10 +116,15 @@ public final class InputGenerator {
             classBuilder.addType(createBuilderClass(typeName, fields));
         }
 
+        // Convert to GeneratorUtils.FieldInfo for shared methods
+        List<GeneratorUtils.FieldInfo> utilFields = fields.stream()
+                .map(f -> new GeneratorUtils.FieldInfo(f.name, f.type, f.nonNull))
+                .toList();
+
         // Add equals, hashCode, toString
-        classBuilder.addMethod(createEquals(typeName, fields));
-        classBuilder.addMethod(createHashCode(fields));
-        classBuilder.addMethod(createToString(typeName, fields));
+        classBuilder.addMethod(GeneratorUtils.createEquals(typeName, utilFields));
+        classBuilder.addMethod(GeneratorUtils.createHashCode(utilFields));
+        classBuilder.addMethod(GeneratorUtils.createToString(typeName, utilFields));
 
         return JavaFile.builder(packageName, classBuilder.build())
                 .indent("    ")
@@ -231,86 +235,16 @@ public final class InputGenerator {
             }
         }
 
-        StringJoiner args = new StringJoiner(", ");
-        for (FieldInfo field : fields) {
-            args.add(field.name);
+        StringBuilder args = new StringBuilder();
+        for (int i = 0; i < fields.size(); i++) {
+            if (i > 0) args.append(", ");
+            args.append(fields.get(i).name);
         }
         buildMethod.addStatement("return new $L($L)", typeName, args.toString());
 
         builder.addMethod(buildMethod.build());
 
         return builder.build();
-    }
-
-    private MethodSpec createEquals(String typeName, List<FieldInfo> fields) {
-        MethodSpec.Builder equals = MethodSpec.methodBuilder("equals")
-                .addAnnotation(Override.class)
-                .addModifiers(Modifier.PUBLIC)
-                .returns(boolean.class)
-                .addParameter(Object.class, "o");
-
-        equals.beginControlFlow("if (this == o)");
-        equals.addStatement("return true");
-        equals.endControlFlow();
-
-        equals.beginControlFlow("if (o == null || getClass() != o.getClass())");
-        equals.addStatement("return false");
-        equals.endControlFlow();
-
-        equals.addStatement("$L that = ($L) o", typeName, typeName);
-
-        if (fields.isEmpty()) {
-            equals.addStatement("return true");
-        } else {
-            StringJoiner joiner = new StringJoiner(" && ");
-            for (FieldInfo field : fields) {
-                joiner.add(String.format("java.util.Objects.equals(%s, that.%s)", field.name, field.name));
-            }
-            equals.addStatement("return $L", joiner.toString());
-        }
-
-        return equals.build();
-    }
-
-    private MethodSpec createHashCode(List<FieldInfo> fields) {
-        MethodSpec.Builder hashCode = MethodSpec.methodBuilder("hashCode")
-                .addAnnotation(Override.class)
-                .addModifiers(Modifier.PUBLIC)
-                .returns(int.class);
-
-        if (fields.isEmpty()) {
-            hashCode.addStatement("return 0");
-        } else {
-            StringJoiner joiner = new StringJoiner(", ");
-            for (FieldInfo field : fields) {
-                joiner.add(field.name);
-            }
-            hashCode.addStatement("return java.util.Objects.hash($L)", joiner.toString());
-        }
-
-        return hashCode.build();
-    }
-
-    private MethodSpec createToString(String typeName, List<FieldInfo> fields) {
-        MethodSpec.Builder toString = MethodSpec.methodBuilder("toString")
-                .addAnnotation(Override.class)
-                .addModifiers(Modifier.PUBLIC)
-                .returns(String.class);
-
-        if (fields.isEmpty()) {
-            toString.addStatement("return $S", typeName + "{}");
-        } else {
-            StringBuilder sb = new StringBuilder();
-            sb.append(typeName).append("{");
-            for (int i = 0; i < fields.size(); i++) {
-                if (i > 0) sb.append(", ");
-                sb.append(fields.get(i).name).append("=\" + ").append(fields.get(i).name).append(" + \"");
-            }
-            sb.append("}");
-            toString.addStatement("return $S", sb.toString());
-        }
-
-        return toString.build();
     }
 
     /**
