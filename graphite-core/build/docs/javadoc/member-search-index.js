@@ -1,0 +1,1 @@
+memberSearchIndex = [{"p":"io.github.graphite","c":"Graphite","l":"VERSION"}];updateSearchResults();
