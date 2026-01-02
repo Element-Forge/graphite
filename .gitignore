@@ -1,19 +1,12 @@
-# Gradle
-.gradle/
-build/
-!gradle/wrapper/gradle-wrapper.jar
-
-# IDE
-.idea/
-*.iml
-.vscode/
-.project
-.classpath
-.settings/
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Logs
-*.log
+#!/gradle/wrapper/gradle-wrapper.jar
+/*.iml
+/*.log
+/.classpath
+/.DS_Store
+/.gradle/
+/.idea/
+/.project
+/.settings/
+/.vscode/
+/build/
+/Thumbs.db
