@@ -5,7 +5,6 @@ import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.FieldSpec;
 import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.MethodSpec;
-import com.squareup.javapoet.ParameterizedTypeName;
 import com.squareup.javapoet.TypeSpec;
 import graphql.language.FieldDefinition;
 import graphql.language.InputValueDefinition;
@@ -16,7 +15,6 @@ import org.jetbrains.annotations.NotNull;
 import javax.annotation.processing.Generated;
 import javax.lang.model.element.Modifier;
 import java.util.Objects;
-import java.util.function.Function;
 
 /**
  * Generates individual mutation builder classes for each mutation field.
@@ -126,8 +124,10 @@ public final class MutationBuilderGenerator {
         // Add constructor
         classBuilder.addMethod(GeneratorUtils.createBuilderConstructor(field, clientClassName, typeMapper));
 
-        // Add select method
-        classBuilder.addMethod(createSelectMethod(field, selectorName, returnTypeName));
+        // Add select method (selectors are in query package)
+        String selectorPackage = packageName.replace(".mutation", ".query");
+        classBuilder.addMethod(GeneratorUtils.createSelectMethod(
+                field, selectorPackage, selectorName, typePackageName, returnTypeName, "mutation"));
 
         // Add buildArgs method if there are arguments
         if (!field.getInputValueDefinitions().isEmpty()) {
@@ -137,41 +137,6 @@ public final class MutationBuilderGenerator {
         return JavaFile.builder(packageName, classBuilder.build())
                 .indent("    ")
                 .build();
-    }
-
-    private MethodSpec createSelectMethod(FieldDefinition field, String selectorName, String returnTypeName) {
-        ClassName selectorClass = ClassName.get(packageName.replace(".mutation", ".query"), selectorName);
-        ClassName returnTypeClass = ClassName.get(typePackageName, returnTypeName);
-        ClassName executableQueryClass = ClassName.get("io.github.graphite", "ExecutableQuery");
-        ParameterizedTypeName executableQueryType = ParameterizedTypeName.get(executableQueryClass, returnTypeClass);
-
-        ParameterizedTypeName functionType = ParameterizedTypeName.get(
-                ClassName.get(Function.class),
-                selectorClass,
-                selectorClass
-        );
-
-        MethodSpec.Builder method = MethodSpec.methodBuilder("select")
-                .addModifiers(Modifier.PUBLIC)
-                .returns(executableQueryType)
-                .addParameter(functionType, "selector")
-                .addJavadoc("Select fields to include in the response.\n")
-                .addJavadoc("\n")
-                .addJavadoc("@param selector function to select fields\n")
-                .addJavadoc("@return an executable mutation\n");
-
-        method.addStatement("$T sel = selector.apply(new $T())", selectorClass, selectorClass);
-
-        String fieldName = field.getName();
-        if (field.getInputValueDefinitions().isEmpty()) {
-            method.addStatement("return new $T<>(client, $S, null, sel.build(), $T.class)",
-                    executableQueryClass, fieldName, returnTypeClass);
-        } else {
-            method.addStatement("return new $T<>(client, $S, buildArgs(), sel.build(), $T.class)",
-                    executableQueryClass, fieldName, returnTypeClass);
-        }
-
-        return method.build();
     }
 
     private MethodSpec createBuildArgsMethod(FieldDefinition field) {

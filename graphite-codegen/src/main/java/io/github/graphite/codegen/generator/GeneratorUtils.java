@@ -3,6 +3,7 @@ package io.github.graphite.codegen.generator;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.ParameterSpec;
+import com.squareup.javapoet.ParameterizedTypeName;
 import graphql.language.FieldDefinition;
 import graphql.language.InputValueDefinition;
 import graphql.language.ListType;
@@ -14,6 +15,7 @@ import org.jetbrains.annotations.NotNull;
 import javax.lang.model.element.Modifier;
 import java.util.List;
 import java.util.StringJoiner;
+import java.util.function.Function;
 
 /**
  * Shared utilities for code generators.
@@ -224,6 +226,58 @@ final class GeneratorUtils {
         }
 
         return constructor.build();
+    }
+
+    /**
+     * Creates a select method for query/mutation builders.
+     *
+     * @param field the field definition
+     * @param selectorPackageName the package name for selectors
+     * @param selectorName the selector class name
+     * @param typePackageName the package name for types
+     * @param returnTypeName the return type name
+     * @param operationType "query" or "mutation" for javadoc
+     * @return the generated select method
+     */
+    @NotNull
+    static MethodSpec createSelectMethod(@NotNull FieldDefinition field,
+                                          @NotNull String selectorPackageName,
+                                          @NotNull String selectorName,
+                                          @NotNull String typePackageName,
+                                          @NotNull String returnTypeName,
+                                          @NotNull String operationType) {
+        ClassName selectorClass = ClassName.get(selectorPackageName, selectorName);
+        ClassName returnTypeClass = ClassName.get(typePackageName, returnTypeName);
+        ClassName executableQueryClass = ClassName.get("io.github.graphite", "ExecutableQuery");
+        ParameterizedTypeName executableQueryType = ParameterizedTypeName.get(executableQueryClass, returnTypeClass);
+
+        ParameterizedTypeName functionType = ParameterizedTypeName.get(
+                ClassName.get(Function.class),
+                selectorClass,
+                selectorClass
+        );
+
+        MethodSpec.Builder method = MethodSpec.methodBuilder("select")
+                .addModifiers(Modifier.PUBLIC)
+                .returns(executableQueryType)
+                .addParameter(functionType, "selector")
+                .addJavadoc("Select fields to include in the response.\n")
+                .addJavadoc("\n")
+                .addJavadoc("@param selector function to select fields\n")
+                .addJavadoc("@return an executable $L\n", operationType);
+
+        method.addStatement("$T sel = selector.apply(new $T())", selectorClass, selectorClass);
+
+        String fieldName = field.getName();
+        if (field.getInputValueDefinitions().isEmpty()) {
+            method.addStatement("return new $T<>(client, $S, null, sel.build(), $T.class)",
+                    executableQueryClass, fieldName, returnTypeClass);
+        } else {
+            method.addStatement("return new $T<>(client, $S, buildArgs(), sel.build(), $T.class)",
+                    executableQueryClass, fieldName, returnTypeClass);
+        }
+
+        return method.build();
     }
 
     /**

@@ -323,4 +323,53 @@ class GeneratorUtilsTest {
         assertEquals("limit", constructor.parameters.get(1).name);
         assertEquals("offset", constructor.parameters.get(2).name);
     }
+
+    @Test
+    void createSelectMethodQuery() {
+        FieldDefinition field = FieldDefinition.newFieldDefinition()
+                .name("user")
+                .type(graphql.language.TypeName.newTypeName("User").build())
+                .build();
+
+        MethodSpec method = GeneratorUtils.createSelectMethod(
+                field, "com.example.query", "UserSelector",
+                "com.example.type", "User", "query");
+
+        assertEquals("select", method.name);
+        assertTrue(method.javadoc.toString().contains("executable query"));
+    }
+
+    @Test
+    void createSelectMethodMutation() {
+        FieldDefinition field = FieldDefinition.newFieldDefinition()
+                .name("createUser")
+                .type(graphql.language.TypeName.newTypeName("User").build())
+                .build();
+
+        MethodSpec method = GeneratorUtils.createSelectMethod(
+                field, "com.example.query", "UserSelector",
+                "com.example.type", "User", "mutation");
+
+        assertEquals("select", method.name);
+        assertTrue(method.javadoc.toString().contains("executable mutation"));
+    }
+
+    @Test
+    void createSelectMethodWithArgs() {
+        FieldDefinition field = FieldDefinition.newFieldDefinition()
+                .name("user")
+                .type(graphql.language.TypeName.newTypeName("User").build())
+                .inputValueDefinition(InputValueDefinition.newInputValueDefinition()
+                        .name("id")
+                        .type(graphql.language.TypeName.newTypeName("ID").build())
+                        .build())
+                .build();
+
+        MethodSpec method = GeneratorUtils.createSelectMethod(
+                field, "com.example.query", "UserSelector",
+                "com.example.type", "User", "query");
+
+        assertEquals("select", method.name);
+        assertTrue(method.toString().contains("buildArgs()"));
+    }
 }
