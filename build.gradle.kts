@@ -1,5 +1,6 @@
 plugins {
     id("java")
+    id("org.sonarqube") version "7.2.2.6593"
 }
 
 group = property("group") as String
@@ -8,6 +9,14 @@ version = property("version") as String
 allprojects {
     repositories {
         mavenCentral()
+    }
+}
+
+sonar {
+    properties {
+        property("sonar.projectKey", "io.github.graphite:graphite")
+        property("sonar.organization", "element-forge")
+        property("sonar.host.url", "https://sonarcloud.io")
     }
 }
 
