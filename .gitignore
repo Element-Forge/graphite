@@ -3,3 +3,4 @@
 /graphite-core/build/
 /graphite-gradle-plugin/build/
 /graphite-maven-plugin/build/
+/graphite-spring-boot-starter/build/

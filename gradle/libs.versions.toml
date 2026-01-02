@@ -1,12 +1,13 @@
 [versions]
-jackson = "2.17.0"
 graphql-java = "22.0"
+jackson = "2.17.0"
 javapoet = "1.13.0"
 jetbrains-annotations = "24.1.0"
-maven-plugin-api = "3.9.6"
 maven-plugin-annotations = "3.11.0"
+maven-plugin-api = "3.9.6"
 micrometer = "1.12.4"
 slf4j = "2.0.12"
+spring-boot = "3.2.4"
 
 [libraries]
 graphql-java = { module = "com.graphql-java:graphql-java", version.ref = "graphql-java" }
@@ -18,6 +19,7 @@ maven-plugin-annotations = { module = "org.apache.maven.plugin-tools:maven-plugi
 maven-plugin-api = { module = "org.apache.maven:maven-plugin-api", version.ref = "maven-plugin-api" }
 micrometer-core = { module = "io.micrometer:micrometer-core", version.ref = "micrometer" }
 slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
+spring-boot-autoconfigure = { module = "org.springframework.boot:spring-boot-autoconfigure", version.ref = "spring-boot" }
 
 [bundles]
 jackson = ["jackson-databind", "jackson-datatype-jsr310"]
