@@ -54,6 +54,7 @@ subprojects {
     tasks.named<JacocoCoverageVerification>("jacocoTestCoverageVerification") {
         dependsOn(tasks.named("jacocoTestReport"))
         violationRules {
+            isFailOnViolation = true
             rule {
                 limit {
                     minimum = BigDecimal("0.95")
