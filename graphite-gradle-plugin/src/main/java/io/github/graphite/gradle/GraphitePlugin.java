@@ -84,22 +84,18 @@ public class GraphitePlugin implements Plugin<Project> {
     }
 
     private void registerTasks(@NotNull Project project, @NotNull GraphiteExtension extension) {
-        // Register the generate task (implementation in GenerateGraphiteClientTask)
-        TaskProvider<?> generateTask = project.getTasks().register(GENERATE_TASK_NAME, task -> {
-            task.setGroup("graphite");
-            task.setDescription("Generates GraphQL client code from the schema.");
-
-            // Task will be replaced with actual implementation in Issue #53
-            task.doLast(t -> {
-                if (!extension.getSchemaPath().isPresent()) {
-                    throw new IllegalStateException("schemaPath must be configured in the graphite extension");
+        // Register the generate task
+        TaskProvider<GenerateGraphiteClientTask> generateTask = project.getTasks().register(
+                GENERATE_TASK_NAME,
+                GenerateGraphiteClientTask.class,
+                task -> {
+                    task.getSchemaPath().set(extension.getSchemaPath());
+                    task.getPackageName().set(extension.getPackageName());
+                    task.getOutputDirectory().set(extension.getOutputDirectory());
+                    task.getGenerateBuilders().set(extension.getGenerateBuilders());
+                    task.getScalarMapping().set(extension.getScalarMapping());
                 }
-                if (!extension.getPackageName().isPresent()) {
-                    throw new IllegalStateException("packageName must be configured in the graphite extension");
-                }
-                project.getLogger().lifecycle("Graphite: Generate task placeholder - implementation coming in Issue #53");
-            });
-        });
+        );
 
         // Register the introspect task (implementation in IntrospectSchemaTask)
         project.getTasks().register(INTROSPECT_TASK_NAME, task -> {
