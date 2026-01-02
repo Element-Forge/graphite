@@ -223,7 +223,7 @@ jobs:
           # Check all entries start with /
           line_num=0
           while IFS= read -r line || [[ -n "$line" ]]; do
-            ((line_num++))
+            ((++line_num))
             [[ -z "$line" || "$line" =~ ^[[:space:]]*# ]] && continue
             if [[ ! "$line" =~ ^!?/ ]]; then
               errors+=("Line $line_num: Entry must start with '/': $line")
@@ -236,7 +236,7 @@ jobs:
           # Check directories end with /
           line_num=0
           while IFS= read -r line || [[ -n "$line" ]]; do
-            ((line_num++))
+            ((++line_num))
             [[ -z "$line" || "$line" =~ ^[[:space:]]*# ]] && continue
             pattern="${line#!}"
             [[ "$pattern" =~ \* ]] && continue
