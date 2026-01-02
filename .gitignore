@@ -1,12 +1,3 @@
 !/.gradle/wrapper/gradle-wrapper.jar
-/*.iml
-/*.log
-/.classpath
-/.DS_Store
 /.gradle/
-/.idea/
-/.project
-/.settings/
-/.vscode/
 /build/
-/Thumbs.db
