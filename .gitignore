@@ -1,3 +1,4 @@
 /build/
 /graphite-codegen/build/
 /graphite-core/build/
+/graphite-gradle-plugin/build/
