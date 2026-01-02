@@ -3,6 +3,7 @@ graphql-java = "22.0"
 jackson = "2.17.0"
 javapoet = "1.13.0"
 jetbrains-annotations = "24.1.0"
+junit = "5.10.2"
 maven-plugin-annotations = "3.11.0"
 maven-plugin-api = "3.9.6"
 micrometer = "1.12.4"
@@ -15,6 +16,7 @@ jackson-databind = { module = "com.fasterxml.jackson.core:jackson-databind", ver
 jackson-datatype-jsr310 = { module = "com.fasterxml.jackson.datatype:jackson-datatype-jsr310", version.ref = "jackson" }
 javapoet = { module = "com.squareup:javapoet", version.ref = "javapoet" }
 jetbrains-annotations = { module = "org.jetbrains:annotations", version.ref = "jetbrains-annotations" }
+junit-jupiter-api = { module = "org.junit.jupiter:junit-jupiter-api", version.ref = "junit" }
 maven-plugin-annotations = { module = "org.apache.maven.plugin-tools:maven-plugin-annotations", version.ref = "maven-plugin-annotations" }
 maven-plugin-api = { module = "org.apache.maven:maven-plugin-api", version.ref = "maven-plugin-api" }
 micrometer-core = { module = "io.micrometer:micrometer-core", version.ref = "micrometer" }
