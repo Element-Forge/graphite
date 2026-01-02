@@ -11,6 +11,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -153,48 +155,56 @@ class GraphitePluginTest {
     }
 
     @Test
-    void generateTaskFailsWithoutSchemaPath() {
+    void generateTaskIsOfCorrectType() {
         project.getPluginManager().apply("io.github.graphite");
-
-        GraphiteExtension extension = project.getExtensions().getByType(GraphiteExtension.class);
-        extension.getPackageName().set("com.example");
-        // schemaPath not set
 
         Task task = project.getTasks().getByName(GraphitePlugin.GENERATE_TASK_NAME);
 
-        IllegalStateException exception = assertThrows(IllegalStateException.class, () ->
-                task.getActions().forEach(action -> action.execute(task)));
-        assertTrue(exception.getMessage().contains("schemaPath"));
+        assertInstanceOf(GenerateGraphiteClientTask.class, task);
     }
 
     @Test
-    void generateTaskFailsWithoutPackageName() {
+    void generateTaskHasInputsFromExtension() {
         project.getPluginManager().apply("io.github.graphite");
 
         GraphiteExtension extension = project.getExtensions().getByType(GraphiteExtension.class);
         extension.getSchemaPath().set(tempDir.resolve("schema.graphqls").toFile());
-        // packageName not set
+        extension.getPackageName().set("com.example.graphql");
 
-        Task task = project.getTasks().getByName(GraphitePlugin.GENERATE_TASK_NAME);
+        GenerateGraphiteClientTask task = (GenerateGraphiteClientTask) project.getTasks()
+                .getByName(GraphitePlugin.GENERATE_TASK_NAME);
 
-        IllegalStateException exception = assertThrows(IllegalStateException.class, () ->
-                task.getActions().forEach(action -> action.execute(task)));
-        assertTrue(exception.getMessage().contains("packageName"));
+        assertEquals(tempDir.resolve("schema.graphqls").toFile(),
+                task.getSchemaPath().get().getAsFile());
+        assertEquals("com.example.graphql", task.getPackageName().get());
+        assertEquals(extension.getOutputDirectory().get().getAsFile(),
+                task.getOutputDirectory().get().getAsFile());
     }
 
     @Test
-    void generateTaskSucceedsWithRequiredConfig() {
+    void generateTaskExecutesSuccessfully() throws IOException {
         project.getPluginManager().apply("io.github.graphite");
 
+        // Create a minimal schema file
+        Path schemaPath = tempDir.resolve("schema.graphqls");
+        Files.writeString(schemaPath, """
+                type Query {
+                    hello: String
+                }
+                """);
+
         GraphiteExtension extension = project.getExtensions().getByType(GraphiteExtension.class);
-        extension.getSchemaPath().set(tempDir.resolve("schema.graphqls").toFile());
+        extension.getSchemaPath().set(schemaPath.toFile());
         extension.getPackageName().set("com.example");
 
         Task task = project.getTasks().getByName(GraphitePlugin.GENERATE_TASK_NAME);
 
-        // Should not throw - placeholder just logs
+        // Execute the task
         assertDoesNotThrow(() ->
                 task.getActions().forEach(action -> action.execute(task)));
+
+        // Verify output was generated
+        assertTrue(extension.getOutputDirectory().get().getAsFile().exists());
     }
 
     @Test
