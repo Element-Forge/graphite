@@ -18,6 +18,9 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Fetch base branch
+        run: git fetch origin ${{ github.base_ref }}:refs/remotes/origin/${{ github.base_ref }}
+
       - name: Validate Branch Name
         run: |
           BRANCH="${{ github.head_ref }}"
@@ -52,7 +55,7 @@ jobs:
         run: |
           echo "Checking commits..."
           
-          COMMITS=$(git log --format="%s" origin/${{ github.base_ref }}..${{ github.head_ref }})
+          COMMITS=$(git log --no-merges --format="%s" origin/${{ github.base_ref }}..HEAD)
           
           FAILED=0
           while IFS= read -r MSG; do
@@ -161,10 +164,10 @@ jobs:
           echo "✅ PR title is valid"
 
       - name: Check PR Body Contains Closes
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
         run: |
-          BODY="${{ github.event.pull_request.body }}"
-          
-          if ! echo "$BODY" | grep -qiE "(closes|fixes|resolves) #[0-9]+"; then
+          if ! echo "$PR_BODY" | grep -qiE "(closes|fixes|resolves) #[0-9]+"; then
             echo ""
             echo "=========================================="
             echo " 🤖 CLAUDE CODE REMINDER"
