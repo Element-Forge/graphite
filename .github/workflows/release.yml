@@ -30,7 +30,9 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Decode GPG Key
-        run: echo "${{ secrets.GPG_SIGNING_KEY }}" | base64 --decode > /tmp/signing-key.asc
+        env:
+          GPG_SIGNING_KEY: ${{ secrets.GPG_SIGNING_KEY }}
+        run: echo "$GPG_SIGNING_KEY" | base64 --decode > /tmp/signing-key.asc
 
       - name: Release
         env:
