@@ -6,6 +6,7 @@ dependencies {
 
     testImplementation(libs.junit.jupiter)
     testImplementation(libs.mockito.core)
+    testImplementation(libs.wiremock)
     testImplementation(libs.maven.core)
     testImplementation(libs.maven.plugin.api)
     testImplementation(libs.maven.plugin.annotations)
