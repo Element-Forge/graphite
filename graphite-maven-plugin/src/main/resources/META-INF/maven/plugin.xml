@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<plugin>
+    <name>Graphite Maven Plugin</name>
+    <description>Maven plugin for Graphite GraphQL client code generation</description>
+    <groupId>io.github.element-forge</groupId>
+    <artifactId>graphite-maven-plugin</artifactId>
+    <version>${project.version}</version>
+    <goalPrefix>graphite</goalPrefix>
+    <isolatedRealm>false</isolatedRealm>
+    <inheritedByDefault>true</inheritedByDefault>
+    <mojos>
+        <mojo>
+            <goal>generate</goal>
+            <description>Generates type-safe GraphQL client code from a schema file.</description>
+            <requiresDirectInvocation>false</requiresDirectInvocation>
+            <requiresProject>true</requiresProject>
+            <requiresReports>false</requiresReports>
+            <aggregator>false</aggregator>
+            <requiresOnline>false</requiresOnline>
+            <inheritedByDefault>true</inheritedByDefault>
+            <phase>generate-sources</phase>
+            <implementation>io.github.graphite.maven.GenerateMojo</implementation>
+            <language>java</language>
+            <instantiationStrategy>per-lookup</instantiationStrategy>
+            <executionStrategy>once-per-session</executionStrategy>
+            <threadSafe>false</threadSafe>
+            <parameters>
+                <parameter>
+                    <name>schemaPath</name>
+                    <type>java.io.File</type>
+                    <required>true</required>
+                    <editable>true</editable>
+                    <description>Path to the GraphQL schema file.</description>
+                </parameter>
+                <parameter>
+                    <name>packageName</name>
+                    <type>java.lang.String</type>
+                    <required>true</required>
+                    <editable>true</editable>
+                    <description>The base package name for generated classes.</description>
+                </parameter>
+                <parameter>
+                    <name>outputDirectory</name>
+                    <type>java.io.File</type>
+                    <required>false</required>
+                    <editable>true</editable>
+                    <description>The output directory for generated source files.</description>
+                </parameter>
+                <parameter>
+                    <name>generateBuilders</name>
+                    <type>boolean</type>
+                    <required>false</required>
+                    <editable>true</editable>
+                    <description>Whether to generate builder classes for input types.</description>
+                </parameter>
+                <parameter>
+                    <name>scalarMapping</name>
+                    <type>java.util.Map</type>
+                    <required>false</required>
+                    <editable>true</editable>
+                    <description>Custom scalar type mappings from GraphQL scalar names to Java class names.</description>
+                </parameter>
+                <parameter>
+                    <name>project</name>
+                    <type>org.apache.maven.project.MavenProject</type>
+                    <required>true</required>
+                    <editable>false</editable>
+                    <description>The Maven project.</description>
+                </parameter>
+            </parameters>
+            <configuration>
+                <schemaPath implementation="java.io.File">${graphite.schemaPath}</schemaPath>
+                <packageName implementation="java.lang.String">${graphite.packageName}</packageName>
+                <outputDirectory implementation="java.io.File" default-value="${project.build.directory}/generated-sources/graphite">${graphite.outputDirectory}</outputDirectory>
+                <generateBuilders implementation="boolean" default-value="true">${graphite.generateBuilders}</generateBuilders>
+                <scalarMapping implementation="java.util.Map"/>
+                <project implementation="org.apache.maven.project.MavenProject" default-value="${project}"/>
+            </configuration>
+        </mojo>
+        <mojo>
+            <goal>introspect</goal>
+            <description>Downloads a GraphQL schema via introspection query.</description>
+            <requiresDirectInvocation>false</requiresDirectInvocation>
+            <requiresProject>true</requiresProject>
+            <requiresReports>false</requiresReports>
+            <aggregator>false</aggregator>
+            <requiresOnline>true</requiresOnline>
+            <inheritedByDefault>true</inheritedByDefault>
+            <implementation>io.github.graphite.maven.IntrospectMojo</implementation>
+            <language>java</language>
+            <instantiationStrategy>per-lookup</instantiationStrategy>
+            <executionStrategy>once-per-session</executionStrategy>
+            <threadSafe>false</threadSafe>
+            <parameters>
+                <parameter>
+                    <name>endpoint</name>
+                    <type>java.lang.String</type>
+                    <required>true</required>
+                    <editable>true</editable>
+                    <description>The GraphQL endpoint URL for introspection.</description>
+                </parameter>
+                <parameter>
+                    <name>outputFile</name>
+                    <type>java.io.File</type>
+                    <required>true</required>
+                    <editable>true</editable>
+                    <description>The output file path for the downloaded schema.</description>
+                </parameter>
+                <parameter>
+                    <name>headers</name>
+                    <type>java.util.Map</type>
+                    <required>false</required>
+                    <editable>true</editable>
+                    <description>HTTP headers to include in the introspection request.</description>
+                </parameter>
+                <parameter>
+                    <name>timeoutSeconds</name>
+                    <type>int</type>
+                    <required>false</required>
+                    <editable>true</editable>
+                    <description>Request timeout in seconds.</description>
+                </parameter>
+            </parameters>
+            <configuration>
+                <endpoint implementation="java.lang.String">${graphite.endpoint}</endpoint>
+                <outputFile implementation="java.io.File">${graphite.outputFile}</outputFile>
+                <headers implementation="java.util.Map"/>
+                <timeoutSeconds implementation="int" default-value="30">${graphite.timeoutSeconds}</timeoutSeconds>
+            </configuration>
+        </mojo>
+    </mojos>
+    <dependencies>
+        <dependency>
+            <groupId>io.github.element-forge</groupId>
+            <artifactId>graphite-codegen</artifactId>
+            <version>${project.version}</version>
+            <type>jar</type>
+        </dependency>
+    </dependencies>
+</plugin>
