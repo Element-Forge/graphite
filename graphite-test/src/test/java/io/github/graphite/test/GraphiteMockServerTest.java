@@ -226,6 +226,185 @@ class GraphiteMockServerTest {
         assertSame(server, result);
     }
 
+    // Variable matching tests
+
+    @Test
+    void stubQueryWithVariableMatchesRequest() throws IOException, InterruptedException {
+        server.stubQueryWithVariable("GetUser", "id", "123", """
+                { "data": { "user": { "id": "123" } } }
+                """);
+
+        String requestBody = """
+                { "operationName": "GetUser", "query": "query GetUser($id: ID!) { user(id: $id) { id } }", "variables": { "id": "123" } }
+                """;
+        HttpResponse<String> response = sendRequest(requestBody);
+
+        assertEquals(200, response.statusCode());
+        assertTrue(response.body().contains("123"));
+    }
+
+    @Test
+    void stubForVariableMatchesAnyOperation() throws IOException, InterruptedException {
+        server.stubForVariable("userId", "456", """
+                { "data": { "result": true } }
+                """);
+
+        String requestBody = """
+                { "operationName": "AnyOp", "query": "query { test }", "variables": { "userId": "456" } }
+                """;
+        HttpResponse<String> response = sendRequest(requestBody);
+
+        assertEquals(200, response.statusCode());
+        assertTrue(response.body().contains("result"));
+    }
+
+    @Test
+    void stubQueryContainingMatchesQueryText() throws IOException, InterruptedException {
+        server.stubQueryContaining("user", """
+                { "data": { "matched": true } }
+                """);
+
+        String requestBody = """
+                { "operationName": "GetUser", "query": "query GetUser { user { id } }" }
+                """;
+        HttpResponse<String> response = sendRequest(requestBody);
+
+        assertEquals(200, response.statusCode());
+        assertTrue(response.body().contains("matched"));
+    }
+
+    @Test
+    void verifyOperationWithVariablePasses() throws IOException, InterruptedException {
+        server.stubQueryWithVariable("GetItem", "itemId", "789", """
+                { "data": {} }
+                """);
+
+        String requestBody = """
+                { "operationName": "GetItem", "query": "query", "variables": { "itemId": "789" } }
+                """;
+        sendRequest(requestBody);
+
+        server.verifyOperationWithVariable("GetItem", "itemId", "789");
+    }
+
+    @Test
+    void verifyVariablePasses() throws IOException, InterruptedException {
+        server.stubForVariable("key", "value", """
+                { "data": {} }
+                """);
+
+        String requestBody = """
+                { "operationName": "Op", "query": "q", "variables": { "key": "value" } }
+                """;
+        sendRequest(requestBody);
+
+        server.verifyVariable("key", "value");
+    }
+
+    @Test
+    void verifyQueryContainingPasses() throws IOException, InterruptedException {
+        server.stubQueryContaining("mutation", """
+                { "data": {} }
+                """);
+
+        String requestBody = """
+                { "operationName": "CreateUser", "query": "mutation CreateUser { createUser { id } }" }
+                """;
+        sendRequest(requestBody);
+
+        server.verifyQueryContaining("mutation");
+    }
+
+    @Test
+    void stubQueryWithVariableRejectsNullOperationName() {
+        assertThrows(NullPointerException.class,
+                () -> server.stubQueryWithVariable(null, "var", "val", "{}"));
+    }
+
+    @Test
+    void stubQueryWithVariableRejectsNullVariableName() {
+        assertThrows(NullPointerException.class,
+                () -> server.stubQueryWithVariable("Op", null, "val", "{}"));
+    }
+
+    @Test
+    void stubQueryWithVariableRejectsNullVariableValue() {
+        assertThrows(NullPointerException.class,
+                () -> server.stubQueryWithVariable("Op", "var", null, "{}"));
+    }
+
+    @Test
+    void stubQueryWithVariableRejectsNullResponse() {
+        assertThrows(NullPointerException.class,
+                () -> server.stubQueryWithVariable("Op", "var", "val", null));
+    }
+
+    @Test
+    void stubForVariableRejectsNullVariableName() {
+        assertThrows(NullPointerException.class,
+                () -> server.stubForVariable(null, "val", "{}"));
+    }
+
+    @Test
+    void stubForVariableRejectsNullVariableValue() {
+        assertThrows(NullPointerException.class,
+                () -> server.stubForVariable("var", null, "{}"));
+    }
+
+    @Test
+    void stubForVariableRejectsNullResponse() {
+        assertThrows(NullPointerException.class,
+                () -> server.stubForVariable("var", "val", null));
+    }
+
+    @Test
+    void stubQueryContainingRejectsNullFragment() {
+        assertThrows(NullPointerException.class,
+                () -> server.stubQueryContaining(null, "{}"));
+    }
+
+    @Test
+    void stubQueryContainingRejectsNullResponse() {
+        assertThrows(NullPointerException.class,
+                () -> server.stubQueryContaining("fragment", null));
+    }
+
+    @Test
+    void verifyOperationWithVariableRejectsNullOperationName() {
+        assertThrows(NullPointerException.class,
+                () -> server.verifyOperationWithVariable(null, "var", "val"));
+    }
+
+    @Test
+    void verifyOperationWithVariableRejectsNullVariableName() {
+        assertThrows(NullPointerException.class,
+                () -> server.verifyOperationWithVariable("Op", null, "val"));
+    }
+
+    @Test
+    void verifyOperationWithVariableRejectsNullVariableValue() {
+        assertThrows(NullPointerException.class,
+                () -> server.verifyOperationWithVariable("Op", "var", null));
+    }
+
+    @Test
+    void verifyVariableRejectsNullVariableName() {
+        assertThrows(NullPointerException.class,
+                () -> server.verifyVariable(null, "val"));
+    }
+
+    @Test
+    void verifyVariableRejectsNullVariableValue() {
+        assertThrows(NullPointerException.class,
+                () -> server.verifyVariable("var", null));
+    }
+
+    @Test
+    void verifyQueryContainingRejectsNull() {
+        assertThrows(NullPointerException.class,
+                () -> server.verifyQueryContaining(null));
+    }
+
     private HttpResponse<String> sendRequest(String body) throws IOException, InterruptedException {
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(server.endpoint()))
