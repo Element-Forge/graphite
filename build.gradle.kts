@@ -1,9 +1,7 @@
 plugins {
     id("java")
     id("org.sonarqube") version "7.2.2.6593"
-    id("signing")
     id("net.researchgate.release") version "3.1.0"
-    id("tech.yanand.maven-central-publish") version "1.2.0" apply false
 }
 
 group = property("group") as String
@@ -17,7 +15,6 @@ release {
 
 tasks.named("afterReleaseBuild") {
     dependsOn(subprojects.map { "${it.path}:publishAllPublicationsToGitHubPackagesRepository" })
-    dependsOn(subprojects.map { "${it.path}:publishToMavenCentralPortal" })
 }
 
 allprojects {
@@ -37,9 +34,7 @@ sonar {
 subprojects {
     apply(plugin = "java-library")
     apply(plugin = "maven-publish")
-    apply(plugin = "signing")
     apply(plugin = "jacoco")
-    apply(plugin = "tech.yanand.maven-central-publish")
 
     java {
         toolchain {
@@ -134,19 +129,4 @@ subprojects {
         }
     }
 
-    configure<SigningExtension> {
-        val signingKeyFile = System.getenv("GPG_SIGNING_KEY_FILE")
-        val signingPassword = System.getenv("GPG_SIGNING_PASSWORD")
-        if (signingKeyFile != null && signingPassword != null) {
-            val signingKey = file(signingKeyFile).readText()
-            useInMemoryPgpKeys(signingKey, signingPassword)
-            sign(extensions.getByType<PublishingExtension>().publications)
-        }
-    }
-
-    extensions.configure<tech.yanand.gradle.mavenpublish.MavenCentralExtension>("mavenCentral") {
-        repoDir.set(layout.buildDirectory.dir("maven-central-staging"))
-        authToken.set(System.getenv("CENTRAL_PORTAL_TOKEN") ?: "")
-        publishingType.set("AUTOMATIC")
-    }
 }

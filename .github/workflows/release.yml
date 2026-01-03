@@ -24,58 +24,13 @@ jobs:
           distribution: 'temurin'
           cache: 'gradle'
 
-      - name: Validate Release Configuration
-        env:
-          CENTRAL_PORTAL_TOKEN: ${{ secrets.CENTRAL_PORTAL_TOKEN }}
-          GPG_SIGNING_KEY: ${{ secrets.GPG_SIGNING_KEY }}
-          GPG_SIGNING_PASSWORD: ${{ secrets.GPG_SIGNING_PASSWORD }}
-        run: |
-          errors=0
-          if [ -z "$CENTRAL_PORTAL_TOKEN" ]; then
-            echo "::error::CENTRAL_PORTAL_TOKEN secret is not set"
-            echo "::error::Generate at https://central.sonatype.com/account and set as 'username:password'"
-            errors=$((errors + 1))
-          fi
-          if [ -z "$GPG_SIGNING_KEY" ]; then
-            echo "::error::GPG_SIGNING_KEY secret is not set"
-            errors=$((errors + 1))
-          fi
-          if [ -z "$GPG_SIGNING_PASSWORD" ]; then
-            echo "::error::GPG_SIGNING_PASSWORD secret is not set"
-            errors=$((errors + 1))
-          fi
-          if [ $errors -gt 0 ]; then
-            echo "::error::$errors required secret(s) missing. Please configure them in repository settings."
-            exit 1
-          fi
-          echo "All required secrets are configured"
-
       - name: Configure Git
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Decode GPG Key
-        env:
-          GPG_SIGNING_KEY: ${{ secrets.GPG_SIGNING_KEY }}
-        run: |
-          echo "$GPG_SIGNING_KEY" | base64 --decode > /tmp/signing-key.asc
-          if ! grep -q "BEGIN PGP PRIVATE KEY BLOCK" /tmp/signing-key.asc; then
-            echo "::error::GPG_SIGNING_KEY is not a valid PGP private key. Expected base64-encoded ASCII-armored key."
-            echo "::error::Generate with: gpg --armor --export-secret-keys KEY_ID | base64 -w 0"
-            exit 1
-          fi
-          echo "GPG key decoded successfully"
-
       - name: Release
         env:
           GITHUB_ACTOR: ${{ github.actor }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          CENTRAL_PORTAL_TOKEN: ${{ secrets.CENTRAL_PORTAL_TOKEN }}
-          GPG_SIGNING_KEY_FILE: /tmp/signing-key.asc
-          GPG_SIGNING_PASSWORD: ${{ secrets.GPG_SIGNING_PASSWORD }}
         run: ./gradlew release -Prelease.useAutomaticVersion=true --no-daemon
-
-      - name: Cleanup GPG Key
-        if: always()
-        run: rm -f /tmp/signing-key.asc
