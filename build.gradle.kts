@@ -1,14 +1,11 @@
 plugins {
     id("java")
     id("org.sonarqube") version "7.2.2.6593"
-    id("signing")
     id("net.researchgate.release") version "3.1.0"
 }
 
 group = property("group") as String
 version = property("version") as String
-
-val isRelease = !version.toString().endsWith("-SNAPSHOT")
 
 release {
     git {
@@ -17,7 +14,7 @@ release {
 }
 
 tasks.named("afterReleaseBuild") {
-    dependsOn(subprojects.map { "${it.path}:publish" })
+    dependsOn(subprojects.map { "${it.path}:publishAllPublicationsToGitHubPackagesRepository" })
 }
 
 allprojects {
@@ -37,7 +34,6 @@ sonar {
 subprojects {
     apply(plugin = "java-library")
     apply(plugin = "maven-publish")
-    apply(plugin = "signing")
     apply(plugin = "jacoco")
 
     java {
@@ -99,18 +95,6 @@ subprojects {
                     password = System.getenv("GITHUB_TOKEN") ?: ""
                 }
             }
-            maven {
-                name = "MavenCentral"
-                url = if (isRelease) {
-                    uri("https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/")
-                } else {
-                    uri("https://s01.oss.sonatype.org/content/repositories/snapshots/")
-                }
-                credentials {
-                    username = System.getenv("OSSRH_USERNAME") ?: ""
-                    password = System.getenv("OSSRH_PASSWORD") ?: ""
-                }
-            }
         }
         publications {
             // Skip for gradle-plugin as java-gradle-plugin creates its own publication
@@ -145,13 +129,4 @@ subprojects {
         }
     }
 
-    configure<SigningExtension> {
-        val signingKeyFile = System.getenv("GPG_SIGNING_KEY_FILE")
-        val signingPassword = System.getenv("GPG_SIGNING_PASSWORD")
-        if (signingKeyFile != null && signingPassword != null) {
-            val signingKey = file(signingKeyFile).readText()
-            useInMemoryPgpKeys(signingKey, signingPassword)
-            sign(extensions.getByType<PublishingExtension>().publications)
-        }
-    }
 }
