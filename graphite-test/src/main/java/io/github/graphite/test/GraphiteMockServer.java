@@ -149,6 +149,78 @@ public final class GraphiteMockServer implements AutoCloseable {
     }
 
     /**
+     * Stubs a response for a specific GraphQL operation with variable matching.
+     *
+     * @param operationName the operation name to match
+     * @param variableName the variable name to match
+     * @param variableValue the variable value to match
+     * @param responseJson the JSON response body
+     * @return this server for method chaining
+     */
+    public GraphiteMockServer stubQueryWithVariable(String operationName, String variableName,
+                                                     Object variableValue, String responseJson) {
+        Objects.requireNonNull(operationName, "operationName must not be null");
+        Objects.requireNonNull(variableName, "variableName must not be null");
+        Objects.requireNonNull(variableValue, "variableValue must not be null");
+        Objects.requireNonNull(responseJson, "responseJson must not be null");
+
+        String valuePattern = variableValue instanceof String
+                ? "\"" + variableValue + "\""
+                : variableValue.toString();
+
+        wireMock.stubFor(post(urlEqualTo("/graphql"))
+                .withRequestBody(matchingJsonPath("$.operationName", equalTo(operationName)))
+                .withRequestBody(matchingJsonPath("$.variables." + variableName, equalTo(variableValue.toString())))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(responseJson)));
+        return this;
+    }
+
+    /**
+     * Stubs a response matching a specific variable value regardless of operation.
+     *
+     * @param variableName the variable name to match
+     * @param variableValue the variable value to match
+     * @param responseJson the JSON response body
+     * @return this server for method chaining
+     */
+    public GraphiteMockServer stubForVariable(String variableName, Object variableValue, String responseJson) {
+        Objects.requireNonNull(variableName, "variableName must not be null");
+        Objects.requireNonNull(variableValue, "variableValue must not be null");
+        Objects.requireNonNull(responseJson, "responseJson must not be null");
+
+        wireMock.stubFor(post(urlEqualTo("/graphql"))
+                .withRequestBody(matchingJsonPath("$.variables." + variableName, equalTo(variableValue.toString())))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(responseJson)));
+        return this;
+    }
+
+    /**
+     * Stubs a response matching when the query contains specific text.
+     *
+     * @param queryFragment the text fragment to match in the query
+     * @param responseJson the JSON response body
+     * @return this server for method chaining
+     */
+    public GraphiteMockServer stubQueryContaining(String queryFragment, String responseJson) {
+        Objects.requireNonNull(queryFragment, "queryFragment must not be null");
+        Objects.requireNonNull(responseJson, "responseJson must not be null");
+
+        wireMock.stubFor(post(urlEqualTo("/graphql"))
+                .withRequestBody(matchingJsonPath("$.query", containing(queryFragment)))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(responseJson)));
+        return this;
+    }
+
+    /**
      * Stubs a GraphQL error response.
      *
      * @param errorMessage the error message
@@ -225,6 +297,46 @@ public final class GraphiteMockServer implements AutoCloseable {
         Objects.requireNonNull(operationName, "operationName must not be null");
         wireMock.verify(postRequestedFor(urlEqualTo("/graphql"))
                 .withRequestBody(matchingJsonPath("$.operationName", equalTo(operationName))));
+    }
+
+    /**
+     * Verifies that a request with a specific operation and variable was made.
+     *
+     * @param operationName the operation name
+     * @param variableName the variable name
+     * @param variableValue the expected variable value
+     */
+    public void verifyOperationWithVariable(String operationName, String variableName, Object variableValue) {
+        Objects.requireNonNull(operationName, "operationName must not be null");
+        Objects.requireNonNull(variableName, "variableName must not be null");
+        Objects.requireNonNull(variableValue, "variableValue must not be null");
+        wireMock.verify(postRequestedFor(urlEqualTo("/graphql"))
+                .withRequestBody(matchingJsonPath("$.operationName", equalTo(operationName)))
+                .withRequestBody(matchingJsonPath("$.variables." + variableName, equalTo(variableValue.toString()))));
+    }
+
+    /**
+     * Verifies that a request with a specific variable was made.
+     *
+     * @param variableName the variable name
+     * @param variableValue the expected variable value
+     */
+    public void verifyVariable(String variableName, Object variableValue) {
+        Objects.requireNonNull(variableName, "variableName must not be null");
+        Objects.requireNonNull(variableValue, "variableValue must not be null");
+        wireMock.verify(postRequestedFor(urlEqualTo("/graphql"))
+                .withRequestBody(matchingJsonPath("$.variables." + variableName, equalTo(variableValue.toString()))));
+    }
+
+    /**
+     * Verifies that a request containing specific query text was made.
+     *
+     * @param queryFragment the text to look for in the query
+     */
+    public void verifyQueryContaining(String queryFragment) {
+        Objects.requireNonNull(queryFragment, "queryFragment must not be null");
+        wireMock.verify(postRequestedFor(urlEqualTo("/graphql"))
+                .withRequestBody(matchingJsonPath("$.query", containing(queryFragment))));
     }
 
     /**
