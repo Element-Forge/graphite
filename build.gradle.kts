@@ -146,9 +146,10 @@ subprojects {
     }
 
     configure<SigningExtension> {
-        val signingKey = System.getenv("GPG_SIGNING_KEY")
+        val signingKeyFile = System.getenv("GPG_SIGNING_KEY_FILE")
         val signingPassword = System.getenv("GPG_SIGNING_PASSWORD")
-        if (signingKey != null && signingPassword != null) {
+        if (signingKeyFile != null && signingPassword != null) {
+            val signingKey = file(signingKeyFile).readText()
             useInMemoryPgpKeys(signingKey, signingPassword)
             sign(extensions.getByType<PublishingExtension>().publications)
         }
