@@ -17,7 +17,7 @@ release {
 }
 
 tasks.named("afterReleaseBuild") {
-    dependsOn("publish")
+    dependsOn(subprojects.map { "${it.path}:publish" })
 }
 
 allprojects {
