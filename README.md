@@ -1,20 +1,26 @@
 # Graphite
 
-A type-safe GraphQL client library for Java 21+.
+[![CI](https://github.com/Element-Forge/graphite/actions/workflows/ci.yml/badge.svg)](https://github.com/Element-Forge/graphite/actions/workflows/ci.yml)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=io.github.graphite%3Agraphite&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=io.github.graphite%3Agraphite)
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=io.github.graphite%3Agraphite&metric=coverage)](https://sonarcloud.io/summary/new_code?id=io.github.graphite%3Agraphite)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+[![Java](https://img.shields.io/badge/Java-21%2B-orange.svg)](https://openjdk.org/)
+
+A type-safe GraphQL client library for Java 21+. ⚡
 
 Graphite generates type-safe Java code from your GraphQL schema, providing compile-time safety and IDE autocompletion for your GraphQL operations.
 
-## Features
+## ✨ Features
 
-- Type-safe query and mutation builders
-- Code generation from GraphQL schema files or introspection
-- Gradle and Maven plugin support
-- Spring Boot auto-configuration
-- Custom scalar type mapping
-- Testing utilities with mock server support
-- Async execution with CompletableFuture
+- 🔒 Type-safe query and mutation builders
+- 🏗️ Code generation from GraphQL schema files or introspection
+- 🔌 Gradle and Maven plugin support
+- 🍃 Spring Boot auto-configuration
+- 🎯 Custom scalar type mapping
+- 🧪 Testing utilities with mock server support
+- ⚡ Async execution with CompletableFuture
 
-## Installation
+## 📦 Installation
 
 ### Gradle
 
@@ -77,7 +83,7 @@ Add the plugin and dependencies to your `pom.xml`:
 </build>
 ```
 
-## Quick Start
+## 🚀 Quick Start
 
 1. Add your GraphQL schema to `src/main/graphql/schema.graphqls`:
 
@@ -134,7 +140,7 @@ System.out.println(query);
 // }
 ```
 
-## Configuration
+## ⚙️ Configuration
 
 ### Gradle Plugin
 
@@ -191,7 +197,7 @@ GraphiteClient client = GraphiteClient.builder()
     .build();
 ```
 
-## Spring Boot Integration
+## 🍃 Spring Boot Integration
 
 Add the Spring Boot starter:
 
@@ -242,7 +248,7 @@ public class UserService {
 }
 ```
 
-## Testing
+## 🧪 Testing
 
 Graphite provides testing utilities for mocking GraphQL responses.
 
@@ -310,7 +316,7 @@ void testResponse() {
 }
 ```
 
-## Schema Introspection
+## 🔍 Schema Introspection
 
 Fetch schema from a running GraphQL endpoint:
 
@@ -324,7 +330,7 @@ mvn graphite:introspect
 
 Configure the endpoint in your build file (see Configuration section).
 
-## Modules
+## 📚 Modules
 
 | Module | Description |
 |--------|-------------|
@@ -335,15 +341,15 @@ Configure the endpoint in your build file (see Configuration section).
 | `graphite-spring-boot-starter` | Spring Boot auto-configuration |
 | `graphite-test` | Testing utilities |
 
-## Requirements
+## 📋 Requirements
 
 - Java 21 or later
 - Gradle 8.0+ or Maven 3.9+
 
-## Contributing
+## 🤝 Contributing
 
 Contributions are welcome. Please open an issue to discuss proposed changes before submitting a pull request.
 
-## License
+## 📄 License
 
 This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
