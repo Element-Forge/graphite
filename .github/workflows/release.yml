@@ -24,6 +24,36 @@ jobs:
           distribution: 'temurin'
           cache: 'gradle'
 
+      - name: Validate Release Configuration
+        env:
+          OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
+          OSSRH_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
+          GPG_SIGNING_KEY: ${{ secrets.GPG_SIGNING_KEY }}
+          GPG_SIGNING_PASSWORD: ${{ secrets.GPG_SIGNING_PASSWORD }}
+        run: |
+          errors=0
+          if [ -z "$OSSRH_USERNAME" ]; then
+            echo "::error::OSSRH_USERNAME secret is not set"
+            errors=$((errors + 1))
+          fi
+          if [ -z "$OSSRH_PASSWORD" ]; then
+            echo "::error::OSSRH_PASSWORD secret is not set"
+            errors=$((errors + 1))
+          fi
+          if [ -z "$GPG_SIGNING_KEY" ]; then
+            echo "::error::GPG_SIGNING_KEY secret is not set"
+            errors=$((errors + 1))
+          fi
+          if [ -z "$GPG_SIGNING_PASSWORD" ]; then
+            echo "::error::GPG_SIGNING_PASSWORD secret is not set"
+            errors=$((errors + 1))
+          fi
+          if [ $errors -gt 0 ]; then
+            echo "::error::$errors required secret(s) missing. Please configure them in repository settings."
+            exit 1
+          fi
+          echo "All required secrets are configured"
+
       - name: Configure Git
         run: |
           git config user.name "github-actions[bot]"
@@ -32,7 +62,14 @@ jobs:
       - name: Decode GPG Key
         env:
           GPG_SIGNING_KEY: ${{ secrets.GPG_SIGNING_KEY }}
-        run: echo "$GPG_SIGNING_KEY" | base64 --decode > /tmp/signing-key.asc
+        run: |
+          echo "$GPG_SIGNING_KEY" | base64 --decode > /tmp/signing-key.asc
+          if ! grep -q "BEGIN PGP PRIVATE KEY BLOCK" /tmp/signing-key.asc; then
+            echo "::error::GPG_SIGNING_KEY is not a valid PGP private key. Expected base64-encoded ASCII-armored key."
+            echo "::error::Generate with: gpg --armor --export-secret-keys KEY_ID | base64 -w 0"
+            exit 1
+          fi
+          echo "GPG key decoded successfully"
 
       - name: Release
         env:
