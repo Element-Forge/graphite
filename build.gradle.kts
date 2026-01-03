@@ -86,8 +86,11 @@ subprojects {
             }
         }
         publications {
-            create<MavenPublication>("maven") {
-                from(components["java"])
+            // Skip for gradle-plugin as java-gradle-plugin creates its own publication
+            if (project.name != "graphite-gradle-plugin") {
+                create<MavenPublication>("maven") {
+                    from(components["java"])
+                }
             }
         }
     }
