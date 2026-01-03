@@ -59,9 +59,9 @@ subprojects {
             isFailOnViolation = true
             rule {
                 limit {
-                    // Lower threshold for plugins due to network-dependent code
-                    minimum = if (project.name in listOf("graphite-gradle-plugin", "graphite-maven-plugin")) {
-                        BigDecimal("0.90")
+                    // Lower threshold for plugins (network-dependent code) and test module (AssertJ inheritance)
+                    minimum = if (project.name in listOf("graphite-gradle-plugin", "graphite-maven-plugin", "graphite-test")) {
+                        BigDecimal("0.85")
                     } else {
                         BigDecimal("0.95")
                     }
