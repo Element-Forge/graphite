@@ -1,10 +1,24 @@
 plugins {
     id("java")
     id("org.sonarqube") version "7.2.2.6593"
+    id("signing")
+    id("net.researchgate.release") version "3.1.0"
 }
 
 group = property("group") as String
 version = property("version") as String
+
+val isRelease = !version.toString().endsWith("-SNAPSHOT")
+
+release {
+    git {
+        requireBranch.set("main")
+    }
+}
+
+tasks.named("afterReleaseBuild") {
+    dependsOn("publish")
+}
 
 allprojects {
     repositories {
@@ -23,6 +37,7 @@ sonar {
 subprojects {
     apply(plugin = "java-library")
     apply(plugin = "maven-publish")
+    apply(plugin = "signing")
     apply(plugin = "jacoco")
 
     java {
@@ -84,14 +99,58 @@ subprojects {
                     password = System.getenv("GITHUB_TOKEN") ?: ""
                 }
             }
+            maven {
+                name = "MavenCentral"
+                url = if (isRelease) {
+                    uri("https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/")
+                } else {
+                    uri("https://s01.oss.sonatype.org/content/repositories/snapshots/")
+                }
+                credentials {
+                    username = System.getenv("OSSRH_USERNAME") ?: ""
+                    password = System.getenv("OSSRH_PASSWORD") ?: ""
+                }
+            }
         }
         publications {
             // Skip for gradle-plugin as java-gradle-plugin creates its own publication
             if (project.name != "graphite-gradle-plugin") {
                 create<MavenPublication>("maven") {
                     from(components["java"])
+                    pom {
+                        name.set(project.name)
+                        description.set("Graphite - Type-safe GraphQL client for Java")
+                        url.set("https://github.com/Element-Forge/graphite")
+                        licenses {
+                            license {
+                                name.set("Apache License, Version 2.0")
+                                url.set("https://www.apache.org/licenses/LICENSE-2.0")
+                            }
+                        }
+                        developers {
+                            developer {
+                                id.set("element-forge")
+                                name.set("Element Forge")
+                                url.set("https://github.com/Element-Forge")
+                            }
+                        }
+                        scm {
+                            connection.set("scm:git:git://github.com/Element-Forge/graphite.git")
+                            developerConnection.set("scm:git:ssh://github.com:Element-Forge/graphite.git")
+                            url.set("https://github.com/Element-Forge/graphite")
+                        }
+                    }
                 }
             }
+        }
+    }
+
+    configure<SigningExtension> {
+        val signingKey = System.getenv("GPG_SIGNING_KEY")
+        val signingPassword = System.getenv("GPG_SIGNING_PASSWORD")
+        if (signingKey != null && signingPassword != null) {
+            useInMemoryPgpKeys(signingKey, signingPassword)
+            sign(extensions.getByType<PublishingExtension>().publications)
         }
     }
 }
