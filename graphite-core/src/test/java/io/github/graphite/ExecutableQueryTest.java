@@ -155,11 +155,36 @@ class ExecutableQueryTest {
     }
 
     @Test
-    void toStringReturnsQuery() {
+    void toStringReturnsPrettyPrintedQuery() {
         ExecutableQuery<String> query = new ExecutableQuery<>(
                 mockClient, "user", "(id: \"123\")", "{ id name }", String.class);
 
-        assertEquals("query { user(id: \"123\") { id name } }", query.toString());
+        assertEquals("""
+                query {
+                  user(id: "123") {
+                    id
+                    name
+                  }
+                }""", query.toString());
+    }
+
+    @Test
+    void toStringWithNestedSelections() {
+        ExecutableQuery<String> query = new ExecutableQuery<>(
+                mockClient, "user", null, "{ id profile { name avatar { url } } }", String.class);
+
+        assertEquals("""
+                query {
+                  user {
+                    id
+                    profile {
+                      name
+                      avatar {
+                        url
+                      }
+                    }
+                  }
+                }""", query.toString());
     }
 
     /**
