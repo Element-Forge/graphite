@@ -8,6 +8,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public class GraphiteHttpException extends GraphiteException {
 
+    /** The HTTP status code, or -1 if not applicable. */
     private final int statusCode;
 
     /**
