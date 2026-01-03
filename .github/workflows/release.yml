@@ -26,18 +26,14 @@ jobs:
 
       - name: Validate Release Configuration
         env:
-          OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
-          OSSRH_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
+          CENTRAL_PORTAL_TOKEN: ${{ secrets.CENTRAL_PORTAL_TOKEN }}
           GPG_SIGNING_KEY: ${{ secrets.GPG_SIGNING_KEY }}
           GPG_SIGNING_PASSWORD: ${{ secrets.GPG_SIGNING_PASSWORD }}
         run: |
           errors=0
-          if [ -z "$OSSRH_USERNAME" ]; then
-            echo "::error::OSSRH_USERNAME secret is not set"
-            errors=$((errors + 1))
-          fi
-          if [ -z "$OSSRH_PASSWORD" ]; then
-            echo "::error::OSSRH_PASSWORD secret is not set"
+          if [ -z "$CENTRAL_PORTAL_TOKEN" ]; then
+            echo "::error::CENTRAL_PORTAL_TOKEN secret is not set"
+            echo "::error::Generate at https://central.sonatype.com/account and set as 'username:password'"
             errors=$((errors + 1))
           fi
           if [ -z "$GPG_SIGNING_KEY" ]; then
@@ -75,8 +71,7 @@ jobs:
         env:
           GITHUB_ACTOR: ${{ github.actor }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
-          OSSRH_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
+          CENTRAL_PORTAL_TOKEN: ${{ secrets.CENTRAL_PORTAL_TOKEN }}
           GPG_SIGNING_KEY_FILE: /tmp/signing-key.asc
           GPG_SIGNING_PASSWORD: ${{ secrets.GPG_SIGNING_PASSWORD }}
         run: ./gradlew release -Prelease.useAutomaticVersion=true --no-daemon
