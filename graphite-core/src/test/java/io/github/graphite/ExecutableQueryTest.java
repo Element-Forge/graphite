@@ -154,6 +154,14 @@ class ExecutableQueryTest {
         assertTrue(client.executeAsyncWasCalled());
     }
 
+    @Test
+    void toStringReturnsQuery() {
+        ExecutableQuery<String> query = new ExecutableQuery<>(
+                mockClient, "user", "(id: \"123\")", "{ id name }", String.class);
+
+        assertEquals("query { user(id: \"123\") { id name } }", query.toString());
+    }
+
     /**
      * Simple mock client for testing.
      */

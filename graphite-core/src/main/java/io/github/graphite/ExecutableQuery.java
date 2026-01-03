@@ -198,4 +198,9 @@ public final class ExecutableQuery<D> implements GraphiteOperation<D> {
     public String getSelection() {
         return selection;
     }
+
+    @Override
+    public String toString() {
+        return getQuery();
+    }
 }
