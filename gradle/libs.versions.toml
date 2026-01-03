@@ -1,4 +1,5 @@
 [versions]
+assertj = "3.25.3"
 graphql-java = "22.0"
 jackson = "2.17.0"
 javapoet = "1.13.0"
@@ -13,6 +14,7 @@ spring-boot = "3.2.4"
 wiremock = "3.5.4"
 
 [libraries]
+assertj-core = { module = "org.assertj:assertj-core", version.ref = "assertj" }
 graphql-java = { module = "com.graphql-java:graphql-java", version.ref = "graphql-java" }
 jackson-databind = { module = "com.fasterxml.jackson.core:jackson-databind", version.ref = "jackson" }
 jackson-datatype-jsr310 = { module = "com.fasterxml.jackson.datatype:jackson-datatype-jsr310", version.ref = "jackson" }

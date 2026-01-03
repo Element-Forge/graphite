@@ -4,8 +4,6 @@ import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
@@ -42,7 +40,6 @@ import static com.github.tomakehurst.wiremock.client.WireMock.*;
 public final class GraphiteMockServer implements AutoCloseable {
 
     private final WireMockServer wireMock;
-    private final List<StubMapping> stubs = new ArrayList<>();
 
     private GraphiteMockServer(int port) {
         WireMockConfiguration config = WireMockConfiguration.options();
@@ -346,11 +343,5 @@ public final class GraphiteMockServer implements AutoCloseable {
      */
     public WireMockServer wireMock() {
         return wireMock;
-    }
-
-    /**
-     * Stub mapping holder for internal use.
-     */
-    private record StubMapping(String operationName, String response) {
     }
 }
