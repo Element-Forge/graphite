@@ -2,12 +2,23 @@ plugins {
     id("java")
     id("org.sonarqube") version "7.2.2.6593"
     id("signing")
+    id("net.researchgate.release") version "3.1.0"
 }
 
 group = property("group") as String
 version = property("version") as String
 
 val isRelease = !version.toString().endsWith("-SNAPSHOT")
+
+release {
+    git {
+        requireBranch.set("main")
+    }
+}
+
+tasks.named("afterReleaseBuild") {
+    dependsOn("publish")
+}
 
 allprojects {
     repositories {
