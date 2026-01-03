@@ -3,7 +3,9 @@ package io.github.graphite;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
@@ -197,5 +199,100 @@ public final class ExecutableQuery<D> implements GraphiteOperation<D> {
     @NotNull
     public String getSelection() {
         return selection;
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append(operationType.getValue()).append(" {\n");
+        sb.append("  ").append(fieldName);
+        if (args != null) {
+            sb.append(args);
+        }
+        sb.append(" ");
+        sb.append(formatSelection(selection, 2));
+        sb.append("\n}");
+        return sb.toString();
+    }
+
+    private String formatSelection(String sel, int indent) {
+        String trimmed = sel.trim();
+        if (!trimmed.startsWith("{") || !trimmed.endsWith("}")) {
+            return trimmed;
+        }
+
+        String inner = trimmed.substring(1, trimmed.length() - 1).trim();
+        if (inner.isEmpty()) {
+            return "{}";
+        }
+
+        StringBuilder sb = new StringBuilder("{\n");
+        String indentStr = "  ".repeat(indent);
+
+        List<String> fields = parseFields(inner);
+        for (String f : fields) {
+            sb.append(indentStr).append(formatField(f.trim(), indent)).append("\n");
+        }
+
+        sb.append("  ".repeat(indent - 1)).append("}");
+        return sb.toString();
+    }
+
+    private List<String> parseFields(String inner) {
+        List<String> fields = new ArrayList<>();
+        int depth = 0;
+        StringBuilder field = new StringBuilder();
+
+        for (int i = 0; i < inner.length(); i++) {
+            char c = inner.charAt(i);
+
+            if (c == '{') {
+                depth++;
+                field.append(c);
+            } else if (c == '}') {
+                depth--;
+                field.append(c);
+                if (depth == 0) {
+                    fields.add(field.toString().trim());
+                    field = new StringBuilder();
+                }
+            } else if (Character.isWhitespace(c) && depth == 0) {
+                String f = field.toString().trim();
+                if (!f.isEmpty()) {
+                    // Look ahead to see if next non-whitespace is '{'
+                    int next = i + 1;
+                    while (next < inner.length() && Character.isWhitespace(inner.charAt(next))) {
+                        next++;
+                    }
+                    if (next < inner.length() && inner.charAt(next) == '{') {
+                        // Keep going - this field has a selection set
+                        field.append(c);
+                    } else {
+                        fields.add(f);
+                        field = new StringBuilder();
+                    }
+                }
+            } else {
+                field.append(c);
+            }
+        }
+
+        String f = field.toString().trim();
+        if (!f.isEmpty()) {
+            fields.add(f);
+        }
+
+        return fields;
+    }
+
+    private String formatField(String field, int indent) {
+        int braceIdx = field.indexOf('{');
+        if (braceIdx == -1) {
+            return field;
+        }
+
+        String name = field.substring(0, braceIdx).trim();
+        String nested = field.substring(braceIdx).trim();
+        return name + " " + formatSelection(nested, indent + 1);
     }
 }
